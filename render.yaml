@@ -5,8 +5,8 @@ services:
     runtime: python
     region: oregon
     plan: free
-    buildCommand: cd backend && ./build.sh
-    startCommand: cd backend && gunicorn clinic_os.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --threads 2 --timeout 120
+    buildCommand: ./build.sh
+    startCommand: gunicorn --chdir backend clinic_os.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --threads 2 --timeout 120
     healthCheckPath: /health/
     envVars:
       - key: ENVIRONMENT
