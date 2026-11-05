@@ -97,6 +97,24 @@ class SystemSettingViewSet(viewsets.ModelViewSet):
     serializer_class = SystemSettingSerializer
     permission_classes = [permissions.AllowAny]
 
+class InitAdminView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        setup_key = request.headers.get('X-Setup-Key') or request.data.get('setup_key')
+        expected_key = os.environ.get('SECRET_KEY', 'bvg-clinicos-secure-jwt-key-2026-enterprise-healthcare-platform-master-production-key')
+
+        has_superuser = User.objects.filter(is_superuser=True).exists()
+        if has_superuser and setup_key != expected_key:
+            return Response({'error': 'Unauthorized setup key.'}, status=status.HTTP_403_FORBIDDEN)
+
+        from django.core.management import call_command
+        try:
+            call_command('ensure_admin')
+            return Response({'success': True, 'message': 'Admin and enterprise infrastructure initialized successfully.'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class AuthLoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -157,8 +175,8 @@ class AuthLoginView(APIView):
             action='USER_LOGIN',
             model_name='User',
             object_id=str(user.id),
-            details={'method': 'JWT', 'client': request.META.get('HTTP_USER_AGENT', '')},
-            ip_address=request.META.get('REMOTE_ADDR', '127.0.0.1')
+            details={'method': 'JWT', 'client': str(request.META.get('HTTP_USER_AGENT', ''))[:200]},
+            ip_address=str(request.META.get('REMOTE_ADDR', '127.0.0.1'))[:50]
         )
 
         return Response({
