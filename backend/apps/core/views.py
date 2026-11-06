@@ -82,7 +82,46 @@ class UserViewSet(viewsets.ModelViewSet):
             phone=phone,
             branch_id=branch_id
         )
-        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+
+        if role == 'PATIENT':
+            try:
+                import datetime
+                from apps.patients.models import Patient
+                year = datetime.date.today().year
+                last_patient = Patient.objects.filter(uhid__startswith=f"BVG-{year}-").order_by('-id').first()
+                if last_patient and last_patient.uhid:
+                    try:
+                        last_num = int(last_patient.uhid.split('-')[-1])
+                        new_num = last_num + 1
+                    except ValueError:
+                        new_num = Patient.objects.count() + 1001
+                else:
+                    new_num = 1001
+                uhid = f"BVG-{year}-{new_num:04d}"
+
+                branch = Branch.objects.filter(id=branch_id).first() if branch_id else Branch.objects.first()
+                Patient.objects.create(
+                    user=user,
+                    branch=branch,
+                    uhid=uhid,
+                    first_name=first_name or username,
+                    last_name=last_name or 'Patient',
+                    email=email,
+                    phone=phone or '9876543210',
+                    date_of_birth='1990-01-01',
+                    gender='Other',
+                    blood_group='O+',
+                    status='Active'
+                )
+            except Exception as e:
+                print(f"Warning: Patient profile auto-creation: {e}")
+
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': UserSerializer(user).data
+        }, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['post'], url_path='create-user')
     def create_custom_user(self, request):

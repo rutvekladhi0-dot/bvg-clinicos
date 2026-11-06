@@ -6,6 +6,7 @@ import { Header } from './components/layout/Header';
 import { MobileNav } from './components/layout/MobileNav';
 import { GlobalSearchModal } from './components/layout/GlobalSearchModal';
 import { ToastContainer } from './components/common/ToastContainer';
+import { ReceptionBuzzerNotifier } from './components/common/ReceptionBuzzerNotifier';
 import { Role } from './types';
 import { ShieldAlert, ArrowLeft, Activity } from 'lucide-react';
 
@@ -89,8 +90,8 @@ const ProtectedRoute: React.FC<{
     return <Navigate to="/login" replace />;
   }
 
-  // Super Admin & Hospital Admin have enterprise-wide privilege
-  if (role === 'SUPER_ADMIN' || role === 'HOSPITAL_ADMIN') {
+  // Super Admin has enterprise-wide privilege
+  if (role === 'SUPER_ADMIN') {
     return <>{children}</>;
   }
 
@@ -102,7 +103,7 @@ const ProtectedRoute: React.FC<{
 };
 
 const MainLayout: React.FC = () => {
-  const { user, isLoading } = useAuth();
+  const { user, role, isLoading } = useAuth();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -153,29 +154,33 @@ const MainLayout: React.FC = () => {
 
         <main className="flex-1 p-2.5 sm:p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto animate-fade-in overflow-x-hidden">
           <Routes>
-            {/* Dashboard - Accessible to all roles */}
-            <Route path="/" element={<ProtectedRoute moduleName="Dashboard"><DashboardPage /></ProtectedRoute>} />
+            {/* Dashboard - Dedicated Patient Portal for Patient role, Executive Dashboard for staff */}
+            <Route path="/" element={
+              <ProtectedRoute moduleName="Dashboard">
+                {role === 'PATIENT' ? <PatientPortalPage /> : <DashboardPage />}
+              </ProtectedRoute>
+            } />
 
             {/* Patients & EMR */}
             <Route path="/patients" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'RECEPTIONIST', 'NURSE']} moduleName="Patients Master">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'RECEPTIONIST', 'NURSE']} moduleName="Patients Master">
                 <PatientsPage />
               </ProtectedRoute>
             } />
             <Route path="/emr" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'NURSE']} moduleName="Electronic Medical Records">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'NURSE']} moduleName="Electronic Medical Records">
                 <EMRPage />
               </ProtectedRoute>
             } />
 
             {/* Appointments & Live Queue */}
             <Route path="/appointments" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'RECEPTIONIST']} moduleName="Appointments & Scheduling">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'RECEPTIONIST', 'PATIENT']} moduleName="Appointments & Scheduling">
                 <AppointmentsPage />
               </ProtectedRoute>
             } />
             <Route path="/queue" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'RECEPTIONIST', 'NURSE']} moduleName="Live Token Queue">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'RECEPTIONIST', 'NURSE']} moduleName="Live Token Queue">
                 <QueuePage />
               </ProtectedRoute>
             } />
@@ -183,98 +188,94 @@ const MainLayout: React.FC = () => {
 
             {/* Clinical Consultations & Prescriptions */}
             <Route path="/opd" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR']} moduleName="OPD Consultations">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR']} moduleName="OPD Consultations">
                 <OPDConsultationPage />
               </ProtectedRoute>
             } />
             <Route path="/prescriptions" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'PHARMACIST', 'NURSE', 'RECEPTIONIST']} moduleName="Prescription Management">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'PHARMACIST', 'NURSE', 'RECEPTIONIST', 'PATIENT']} moduleName="Prescription Management">
                 <PrescriptionsPage />
               </ProtectedRoute>
             } />
 
             {/* Inpatient (IPD) & Emergency */}
             <Route path="/ipd" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'NURSE']} moduleName="Inpatient (IPD) & Bed Allocation">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'NURSE']} moduleName="Inpatient (IPD) & Bed Allocation">
                 <IPDManagementPage />
               </ProtectedRoute>
             } />
             <Route path="/emergency" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'NURSE', 'OT_STAFF']} moduleName="Emergency & ICU Triage">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'NURSE', 'OT_STAFF']} moduleName="Emergency & ICU Triage">
                 <EmergencyPage />
               </ProtectedRoute>
             } />
 
             {/* Operation Theatre */}
             <Route path="/operation-theatre" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'OT_STAFF']} moduleName="Operation Theatre & Surgery">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'OT_STAFF']} moduleName="Operation Theatre & Surgery">
                 <OperationTheatrePage />
               </ProtectedRoute>
             } />
             <Route path="/ot" element={<Navigate to="/operation-theatre" replace />} />
 
-            {/* Diagnostics & Pharmacy */}
+            {/* Diagnostics & Pharmacy - Radiology Integrated into Laboratory */}
             <Route path="/pharmacy" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'PHARMACIST', 'DOCTOR']} moduleName="Pharmacy POS & Stock">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'PHARMACIST', 'DOCTOR']} moduleName="Pharmacy POS & Stock">
                 <PharmacyPage />
               </ProtectedRoute>
             } />
             <Route path="/laboratory" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'LAB_TECHNICIAN', 'DOCTOR']} moduleName="Laboratory Diagnostics">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'LAB_TECHNICIAN', 'RADIOLOGIST', 'DOCTOR']} moduleName="Laboratory Diagnostics & Radiology Imaging">
                 <LaboratoryPage />
               </ProtectedRoute>
             } />
-            <Route path="/radiology" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'RADIOLOGIST', 'DOCTOR']} moduleName="Radiology PACS & Imaging">
-                <RadiologyPage />
-              </ProtectedRoute>
-            } />
+            <Route path="/radiology" element={<Navigate to="/laboratory" replace />} />
             <Route path="/blood-bank" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'LAB_TECHNICIAN', 'NURSE', 'DOCTOR']} moduleName="Blood Bank Transfusions">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'LAB_TECHNICIAN', 'NURSE', 'DOCTOR']} moduleName="Blood Bank Transfusions">
                 <BloodBankPage />
               </ProtectedRoute>
             } />
 
             {/* Billing, Insurance & Accounting */}
             <Route path="/billing" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'RECEPTIONIST']} moduleName="Billing & Invoicing">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'RECEPTIONIST', 'PATIENT']} moduleName="Billing & Invoicing">
                 <BillingPage />
               </ProtectedRoute>
             } />
             <Route path="/insurance" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT']} moduleName="Insurance TPA Claims">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT']} moduleName="Insurance TPA Claims">
                 <InsurancePage />
               </ProtectedRoute>
             } />
             <Route path="/accounting" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT']} moduleName="Financial Accounting & Ledgers">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT']} moduleName="Financial Accounting & Ledgers">
                 <AccountingPage />
               </ProtectedRoute>
             } />
 
             {/* Operations, HR, Branches, Telemedicine & Portal */}
             <Route path="/doctors" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'RECEPTIONIST', 'HR_MANAGER']} moduleName="Doctor Rosters & Availability">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'RECEPTIONIST', 'HR_MANAGER']} moduleName="Doctor Rosters & Availability">
                 <DoctorsPage />
               </ProtectedRoute>
             } />
             <Route path="/hr" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'HR_MANAGER', 'ACCOUNTANT']} moduleName="HR & Staff Management">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'HR_MANAGER', 'ACCOUNTANT']} moduleName="HR & Staff Management">
                 <HRStaffPage />
               </ProtectedRoute>
             } />
             <Route path="/branches" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN']} moduleName="Multi-Branch Management">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN']} moduleName="Multi-Branch Management">
                 <BranchesPage />
               </ProtectedRoute>
             } />
             <Route path="/telemedicine" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'PATIENT']} moduleName="Telemedicine Video Consultations">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'PATIENT']} moduleName="Telemedicine Video Consultations">
                 <TelemedicinePage />
               </ProtectedRoute>
             } />
             <Route path="/portal" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'PATIENT']} moduleName="Patient Self-Service Portal">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'PATIENT']} moduleName="Patient Self-Service Portal">
                 <PatientPortalPage />
               </ProtectedRoute>
             } />
@@ -282,23 +283,23 @@ const MainLayout: React.FC = () => {
 
             {/* Intelligence, Notifications & Administration */}
             <Route path="/analytics" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'DOCTOR']} moduleName="Advanced Analytics & BI">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'DOCTOR']} moduleName="Advanced Analytics & BI">
                 <AnalyticsPage />
               </ProtectedRoute>
             } />
             <Route path="/ai-insights" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR']} moduleName="AI Predictive Clinical Insights">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR']} moduleName="AI Predictive Clinical Insights">
                 <AIInsightsPage />
               </ProtectedRoute>
             } />
             <Route path="/notifications" element={<ProtectedRoute moduleName="Notifications"><NotificationsPage /></ProtectedRoute>} />
             <Route path="/administration" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN']} moduleName="User Administration & RBAC">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN']} moduleName="User Administration & RBAC">
                 <AdministrationPage />
               </ProtectedRoute>
             } />
             <Route path="/settings" element={
-              <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HOSPITAL_ADMIN']} moduleName="System Settings & Security">
+              <ProtectedRoute allowedRoles={['SUPER_ADMIN']} moduleName="System Settings & Security">
                 <SettingsPage />
               </ProtectedRoute>
             } />
@@ -310,6 +311,7 @@ const MainLayout: React.FC = () => {
       </div>
 
       {/* Global Interactive Overlays */}
+      <ReceptionBuzzerNotifier />
       <MobileNav />
       <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       <ToastContainer />

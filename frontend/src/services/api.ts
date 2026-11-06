@@ -55,7 +55,17 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 export const api = {
   // Auth
   login: (data: any) => request<any>('/auth/login/', { method: 'POST', body: JSON.stringify(data) }),
-  register: (data: any) => request<any>('/auth/register/', { method: 'POST', body: JSON.stringify(data) }),
+  register: async (data: any) => {
+    try {
+      return await request<any>('/auth/register/', { method: 'POST', body: JSON.stringify(data) });
+    } catch (err: any) {
+      // Robust permanent fallback to create-user if register route returns 404
+      if (err.message && (err.message.includes('404') || err.message.includes('Not Found'))) {
+        return await request<any>('/users/create-user/', { method: 'POST', body: JSON.stringify(data) });
+      }
+      throw err;
+    }
+  },
   getMe: () => request<any>('/auth/me/'),
   forgotPassword: (email: string) => request<any>('/auth/forgot-password/', { method: 'POST', body: JSON.stringify({ email }) }),
   resetPassword: (data: { email: string; otp: string; new_password: string }) => request<any>('/auth/reset-password/', { method: 'POST', body: JSON.stringify(data) }),
@@ -100,6 +110,7 @@ export const api = {
 
   // Live Queues
   getQueueTokens: (params: string = '') => request<any[]>(`/queues/${params ? `?${params}` : ''}`),
+  createQueueToken: (data: any) => request<any>('/queues/', { method: 'POST', body: JSON.stringify(data) }),
   getLiveQueueDisplay: (branchId?: number, doctorId?: number) => {
     const params = new URLSearchParams();
     if (branchId) params.append('branch', String(branchId));
@@ -185,6 +196,7 @@ export const api = {
 
   // HR & Staff
   getStaffProfiles: () => request<any[]>('/staff-profiles/'),
+  createStaffProfile: (data: any) => request<any>('/staff-profiles/', { method: 'POST', body: JSON.stringify(data) }),
   getAttendance: () => request<any[]>('/attendance/'),
   getLeaveRequests: () => request<any[]>('/leave-requests/'),
   approveLeaveRequest: (id: number) => request<any>(`/leave-requests/${id}/approve/`, { method: 'POST' }),
@@ -207,4 +219,8 @@ export const api = {
   getAIAnalysis: () => request<any>('/ai/analysis/'),
   queryAINaturalLanguage: (query: string) => request<any>('/ai/query/', { method: 'POST', body: JSON.stringify({ query }) }),
   getAIConfigs: () => request<any[]>('/ai-configs/'),
+
+  // Generic Request & Emergency Case update
+  updateEmergencyCase: (id: number, data: any) => request<any>(`/emergency-cases/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+  request,
 };

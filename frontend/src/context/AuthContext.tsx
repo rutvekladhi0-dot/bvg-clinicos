@@ -144,11 +144,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (data: any) => {
     try {
       const res = await api.register(data);
-      if (res.access) {
+      if (res && res.access) {
         localStorage.setItem('bvg_token', res.access);
         setUser(res.user);
         setRoleState(res.user.role);
         showToast(`Registration successful! Welcome, ${res.user.full_name || res.user.username}!`, 'success');
+      } else {
+        await login(data.username, data.password);
+        showToast(`Registration successful! Welcome, ${data.first_name || data.username}!`, 'success');
       }
     } catch (err: any) {
       showToast(err.message || 'Registration failed.', 'error');
@@ -161,7 +164,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let targetRole: Role = 'SUPER_ADMIN';
     const r = roleName.toUpperCase();
     if (r.includes('SUPER')) targetRole = 'SUPER_ADMIN';
-    else if (r.includes('HOSPITAL')) targetRole = 'HOSPITAL_ADMIN';
     else if (r.includes('BRANCH')) targetRole = 'BRANCH_ADMIN';
     else if (r.includes('DOCTOR') || r.includes('PHYSICIAN')) targetRole = 'DOCTOR';
     else if (r.includes('RECEPTION')) targetRole = 'RECEPTIONIST';

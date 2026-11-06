@@ -1,27 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { Patient, Doctor, Appointment } from '../types';
+import { Patient, Doctor, Appointment, QueueToken } from '../types';
 import { Modal } from '../components/common/Modal';
 import { Badge } from '../components/common/Badge';
 import {
   Stethoscope, Activity, Plus, Trash2, Heart, Save,
-  FileCheck, ShieldAlert, Pill, Calendar, Clock
+  FileCheck, ShieldAlert, Pill, Calendar, Clock,
+  Volume2, AlertTriangle, ArrowRight, UserCheck, Flame,
+  Users, CheckCircle2, ChevronRight, Siren
 } from 'lucide-react';
 
 export const OPDConsultationPage: React.FC = () => {
-  const { branchId, t, showToast } = useAuth();
+  const { branchId, t, showToast, user } = useAuth();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [consultations, setConsultations] = useState<any[]>([]);
+  const [waitingTokens, setWaitingTokens] = useState<QueueToken[]>([]);
+  const [nowServingToken, setNowServingToken] = useState<QueueToken | null>(null);
+  const [emergencyCases, setEmergencyCases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCallingNext, setIsCallingNext] = useState(false);
 
   // Form State
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
   const [selectedAppointmentId, setSelectedAppointmentId] = useState('');
-  
+
   // Vitals
   const [vitals, setVitals] = useState({
     systolic_bp: 120,
@@ -52,18 +58,38 @@ export const OPDConsultationPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [pats, docs, apts, consults] = await Promise.all([
-        api.getPatients(`branch=${branchId}`),
-        api.getDoctors(`branch=${branchId}`),
-        api.getAppointments(`branch=${branchId}&status=Checked-in`),
-        api.getConsultations(`branch=${branchId}`)
+      const [pats, docs, apts, consults, tokens, emerg] = await Promise.all([
+        api.getPatients(`branch=${branchId}`).catch(() => []),
+        api.getDoctors(`branch=${branchId}`).catch(() => []),
+        api.getAppointments(`branch=${branchId}&status=Checked-in`).catch(() => []),
+        api.getConsultations(`branch=${branchId}`).catch(() => []),
+        api.getQueueTokens(`branch=${branchId}`).catch(() => []),
+        api.getEmergencyCases(`branch=${branchId}`).catch(() => []),
       ]);
+
       setPatients(pats);
       setDoctors(docs);
       setAppointments(apts);
       setConsultations(consults);
-      if (docs.length > 0) setSelectedDoctorId(String(docs[0].id));
-      if (pats.length > 0) setSelectedPatientId(String(pats[0].id));
+
+      // Filter tokens
+      const waiting = (tokens || []).filter((tk: any) => tk.status === 'Waiting');
+      const serving = (tokens || []).find((tk: any) => tk.status === 'Serving');
+      setWaitingTokens(waiting);
+      setNowServingToken(serving || null);
+
+      // Active emergency cases (Triage or Under Treatment)
+      const activeEmerg = (emerg || []).filter((ec: any) => ec.status === 'Triage' || ec.status === 'Under Treatment');
+      setEmergencyCases(activeEmerg);
+
+      if (docs.length > 0 && !selectedDoctorId) {
+        // Try finding doctor matching current user
+        const matched = docs.find((d: any) => d.user === user?.id || d.full_name?.toLowerCase().includes(user?.username?.toLowerCase() || ''));
+        setSelectedDoctorId(String(matched ? matched.id : docs[0].id));
+      }
+      if (pats.length > 0 && !selectedPatientId) {
+        setSelectedPatientId(String(pats[0].id));
+      }
     } catch (err) {
       console.error('Error loading OPD data', err);
     } finally {
@@ -73,7 +99,155 @@ export const OPDConsultationPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    // Poll queue status periodically
+    const timer = setInterval(() => {
+      api.getQueueTokens(`branch=${branchId}`).then((tokens) => {
+        if (tokens) {
+          setWaitingTokens(tokens.filter((tk: any) => tk.status === 'Waiting'));
+          setNowServingToken(tokens.find((tk: any) => tk.status === 'Serving') || null);
+        }
+      }).catch(() => {});
+    }, 8000);
+    return () => clearInterval(timer);
   }, [branchId]);
+
+  const selectedDoctor = doctors.find((d) => d.id === Number(selectedDoctorId));
+  const selectedPatient = patients.find((p) => p.id === Number(selectedPatientId));
+
+  // Trigger Reception Buzzer
+  const broadcastBuzzer = (tokenNumber: string, patientName: string, docName: string, room: string) => {
+    const payload = {
+      id: Date.now(),
+      tokenNumber,
+      patientName,
+      doctorName: docName,
+      roomNumber: room,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    // 1. BroadcastChannel
+    try {
+      const bc = new BroadcastChannel('bvg_buzzer_channel');
+      bc.postMessage(payload);
+      bc.close();
+    } catch (e) {
+      console.warn('BroadcastChannel error', e);
+    }
+
+    // 2. Storage event
+    localStorage.setItem('bvg_buzzer_event', JSON.stringify(payload));
+  };
+
+  // Next Patient Workflow
+  const handleCallNextPatient = async () => {
+    setIsCallingNext(true);
+    try {
+      // Find next token for this doctor or general waiting queue
+      const docWaiting = waitingTokens.filter(t => !selectedDoctorId || Number(t.doctor) === Number(selectedDoctorId));
+      const nextToken = docWaiting.length > 0 ? docWaiting[0] : waitingTokens[0];
+
+      if (!nextToken) {
+        showToast('No more patients waiting in the consultation queue!', 'info');
+        setIsCallingNext(false);
+        return;
+      }
+
+      // Call API to mark serving
+      const called = await api.callQueueToken(nextToken.id);
+
+      // Select patient in OPD form
+      setSelectedPatientId(String(called.patient));
+      if (called.appointment) {
+        setSelectedAppointmentId(String(called.appointment));
+      }
+
+      // Pre-populate patient complaints / vitals from timeline or patient info
+      const pat = patients.find(p => p.id === Number(called.patient));
+      if (pat) {
+        setChiefComplaint(`OPD Consultation for Token ${called.token_number} - Priority: ${called.priority || 'Normal'}`);
+      }
+
+      const docName = selectedDoctor?.full_name || called.doctor_name || 'Consultant Doctor';
+      const roomNum = selectedDoctor?.room_number || called.room_number || 'OPD-101';
+      const patName = pat?.full_name || called.patient_name || 'Patient';
+
+      // Buzzer notification to Reception
+      broadcastBuzzer(called.token_number, patName, docName, roomNum);
+
+      showToast(`🔔 Token ${called.token_number} (${patName}) called! Receptionist buzzer alert triggered.`, 'success');
+
+      // Refresh queues
+      const refreshedTokens = await api.getQueueTokens(`branch=${branchId}`);
+      setWaitingTokens(refreshedTokens.filter((tk: any) => tk.status === 'Waiting'));
+      setNowServingToken(refreshedTokens.find((tk: any) => tk.status === 'Serving') || null);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to call next patient', 'error');
+    } finally {
+      setIsCallingNext(false);
+    }
+  };
+
+  // Call Specific Token from waiting list
+  const handleCallSpecificToken = async (token: QueueToken) => {
+    try {
+      const called = await api.callQueueToken(token.id);
+      setSelectedPatientId(String(called.patient));
+      if (called.appointment) setSelectedAppointmentId(String(called.appointment));
+
+      const pat = patients.find(p => p.id === Number(called.patient));
+      const docName = selectedDoctor?.full_name || called.doctor_name || 'Consultant Doctor';
+      const roomNum = selectedDoctor?.room_number || called.room_number || 'OPD-101';
+      const patName = pat?.full_name || called.patient_name || 'Patient';
+
+      broadcastBuzzer(called.token_number, patName, docName, roomNum);
+      showToast(`🔔 Token ${called.token_number} called to ${roomNum}!`, 'success');
+
+      const refreshedTokens = await api.getQueueTokens(`branch=${branchId}`);
+      setWaitingTokens(refreshedTokens.filter((tk: any) => tk.status === 'Waiting'));
+      setNowServingToken(refreshedTokens.find((tk: any) => tk.status === 'Serving') || null);
+    } catch (err: any) {
+      showToast(err.message || 'Call failed', 'error');
+    }
+  };
+
+  // Start Emergency Treatment
+  const handleStartEmergencyTreatment = async (ec: any) => {
+    try {
+      // 1. Preload patient
+      setSelectedPatientId(String(ec.patient));
+
+      // 2. Preload emergency vitals & biometrics
+      setVitals({
+        systolic_bp: ec.systolic_bp || 120,
+        diastolic_bp: ec.diastolic_bp || 80,
+        heart_rate: ec.pulse || 90,
+        temperature_f: Number(ec.temp_f || 98.6),
+        spo2: ec.spo2 || 95,
+        respiratory_rate: 20,
+        weight_kg: 70.0,
+        height_cm: 170.0,
+      });
+
+      // 3. Preload Chief Complaint & Treatment Plan
+      setChiefComplaint(`[CRITICAL EMERGENCY - ${ec.triage_level?.toUpperCase()}] ${ec.chief_complaint} (Mode: ${ec.arrival_mode || 'Ambulance'})`);
+      setDiagnosis(`Emergency Case ${ec.case_number}: Acute Medical Resuscitation`);
+      setTreatmentPlan(ec.initial_management || 'Immediate emergency resuscitation, supplemental oxygen and continuous cardiac monitoring initiated.');
+
+      // 4. Update status on backend
+      await api.request(`/emergency-cases/${ec.id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'Under Treatment' }),
+      });
+
+      showToast(`🚨 Emergency case ${ec.case_number} loaded into clinical consultation! Status set to Under Treatment.`, 'success');
+
+      // Refresh emergency list
+      const updatedEmerg = await api.getEmergencyCases(`branch=${branchId}`);
+      setEmergencyCases(updatedEmerg.filter((e: any) => e.status === 'Triage' || e.status === 'Under Treatment'));
+    } catch (err: any) {
+      showToast(err.message || 'Failed to start emergency treatment', 'error');
+    }
+  };
 
   const addMedicineRow = () => {
     setMedicines([
@@ -129,7 +303,12 @@ export const OPDConsultationPage: React.FC = () => {
         });
       }
 
-      showToast('OPD Consultation completed! Invoice generated automatically.', 'success');
+      // 3. Mark current serving token as completed
+      if (nowServingToken && Number(nowServingToken.patient) === Number(selectedPatientId)) {
+        await api.completeQueueToken(nowServingToken.id).catch(() => {});
+      }
+
+      showToast('OPD Consultation completed! Electronic Prescription & Invoice generated.', 'success');
       setDiagnosis('');
       setChiefComplaint('');
       loadData();
@@ -138,18 +317,130 @@ export const OPDConsultationPage: React.FC = () => {
     }
   };
 
-  const selectedPatient = patients.find((p) => p.id === Number(selectedPatientId));
-
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-          {t('opd')}
-        </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Clinical examination, vital parameters, ICD-10 diagnosis & digital prescription generator
-        </p>
+      {/* Header with Next Patient Action */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            {t('opd')}
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Clinical examination, vital parameters, ICD-10 diagnosis & digital prescription generator
+          </p>
+        </div>
+
+        {/* Doctor Next Patient Trigger */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleCallNextPatient}
+            disabled={isCallingNext || waitingTokens.length === 0}
+            className="flex items-center px-5 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
+          >
+            <Volume2 className="w-4 h-4 mr-2 animate-pulse group-hover:scale-110 transition-transform" />
+            <span>Next Patient</span>
+            <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] bg-white/20 font-mono">
+              {waitingTokens.length} waiting
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Emergency Priority Alert Banner (Req 7) */}
+      {emergencyCases.length > 0 && (
+        <div className="bg-gradient-to-r from-rose-600 via-rose-700 to-red-800 text-white p-4 sm:p-5 rounded-2xl shadow-xl border-2 border-rose-300 animate-in fade-in duration-300 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2.5">
+              <span className="p-2 bg-white/20 rounded-xl animate-pulse">
+                <Siren className="w-5 h-5 text-white" />
+              </span>
+              <div>
+                <span className="text-[10px] font-black tracking-widest uppercase bg-white text-rose-800 px-2 py-0.5 rounded-md">
+                  Emergency Priority Alert
+                </span>
+                <h3 className="text-sm font-black text-white mt-1">
+                  {emergencyCases.length} Critical Emergency {emergencyCases.length === 1 ? 'Patient' : 'Patients'} Awaiting Immediate Medical Attention!
+                </h3>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            {emergencyCases.map((ec: any) => (
+              <div
+                key={ec.id}
+                className="bg-black/25 backdrop-blur-xs p-3.5 rounded-xl border border-white/20 flex flex-col justify-between space-y-2"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-black text-rose-200">{ec.case_number}</span>
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-500 text-white uppercase">
+                      Triage: {ec.triage_level}
+                    </span>
+                  </div>
+                  <h4 className="font-extrabold text-sm text-white mt-1">{ec.patient_name || 'Emergency Patient'}</h4>
+                  <p className="text-xs text-rose-100 line-clamp-1 mt-0.5">
+                    <strong>Complaint:</strong> {ec.chief_complaint}
+                  </p>
+                  <p className="text-[11px] text-rose-200 font-mono mt-0.5">
+                    BP: {ec.systolic_bp}/{ec.diastolic_bp} • Pulse: {ec.pulse} bpm • SpO2: {ec.spo2}% • Mode: {ec.arrival_mode}
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-white/10 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleStartEmergencyTreatment(ec)}
+                    className="flex items-center px-3.5 py-1.5 bg-white text-rose-800 hover:bg-rose-50 font-black text-xs rounded-lg shadow-sm transition-transform active:scale-95"
+                  >
+                    <Flame className="w-3.5 h-3.5 mr-1 text-rose-600" />
+                    Start Emergency Treatment
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Doctor Consultation Queue Bar */}
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 flex items-center justify-center font-bold">
+            <Users className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+              Consulting: {selectedDoctor?.full_name || 'Assigned Consultant'} ({selectedDoctor?.room_number || 'Room 101'})
+            </div>
+            <div className="text-[11px] text-slate-400">
+              Now Serving: <strong className="font-mono text-teal-600 dark:text-teal-400">{nowServingToken ? `${nowServingToken.token_number} (${nowServingToken.patient_name})` : 'None'}</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Live waiting queue tokens chips */}
+        <div className="flex items-center gap-2 overflow-x-auto py-1">
+          {waitingTokens.length === 0 ? (
+            <span className="text-xs text-slate-400 font-medium">No patients currently in waiting queue</span>
+          ) : (
+            waitingTokens.slice(0, 5).map((tk: any) => (
+              <button
+                key={tk.id}
+                type="button"
+                onClick={() => handleCallSpecificToken(tk)}
+                className="flex items-center px-3 py-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950/50 border border-slate-200 dark:border-slate-700 hover:border-teal-500 rounded-xl text-xs transition-colors shrink-0 font-medium"
+              >
+                <span className="font-mono font-bold text-teal-700 dark:text-teal-300 mr-1.5">{tk.token_number}</span>
+                <span className="text-slate-700 dark:text-slate-200 max-w-[90px] truncate">{tk.patient_name}</span>
+                <span className={`ml-1.5 text-[9px] font-bold px-1.5 py-0.2 rounded-md ${tk.priority === 'Emergency' ? 'bg-rose-100 text-rose-700' : 'bg-slate-200 dark:bg-slate-700 text-slate-600'}`}>
+                  {tk.priority}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -193,7 +484,7 @@ export const OPDConsultationPage: React.FC = () => {
                   >
                     {doctors.map((d) => (
                       <option key={d.id} value={d.id}>
-                        {d.full_name} ({d.specialization})
+                        {d.full_name} ({d.specialization}) - {d.room_number || 'OPD'}
                       </option>
                     ))}
                   </select>

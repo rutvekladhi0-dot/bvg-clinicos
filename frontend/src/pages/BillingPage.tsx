@@ -5,6 +5,7 @@ import { Invoice, Patient } from '../types';
 import { Modal } from '../components/common/Modal';
 import { Badge } from '../components/common/Badge';
 import { EmptyState } from '../components/common/EmptyState';
+import { PrintableInvoiceModal } from '../components/common/PrintableInvoiceModal';
 import {
   CreditCard, DollarSign, Plus, Printer, CheckCircle2,
   Clock, AlertCircle, FileText, Download, QrCode
@@ -22,6 +23,7 @@ export const BillingPage: React.FC = () => {
   const [payAmount, setPayAmount] = useState<number>(0);
   const [payMethod, setPayMethod] = useState('UPI');
   const [payRef, setPayRef] = useState('');
+  const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<any>(null);
 
   // Create Invoice Modal
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -260,11 +262,12 @@ export const BillingPage: React.FC = () => {
                         </button>
                       )}
                       <button
-                        onClick={() => window.print()}
-                        className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-                        title="Print Receipt"
+                        onClick={() => setSelectedInvoiceForPrint(inv)}
+                        className="inline-flex items-center px-2 py-1 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                        title="Print Patient Bill"
                       >
-                        <Printer className="w-3.5 h-3.5" />
+                        <Printer className="w-3.5 h-3.5 mr-1" />
+                        Print Bill
                       </button>
                     </td>
                   </tr>
@@ -457,6 +460,13 @@ export const BillingPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Patient-Specific Printable Bill Modal */}
+      <PrintableInvoiceModal
+        isOpen={!!selectedInvoiceForPrint}
+        invoice={selectedInvoiceForPrint}
+        onClose={() => setSelectedInvoiceForPrint(null)}
+      />
     </div>
   );
 };

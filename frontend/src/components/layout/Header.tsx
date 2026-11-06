@@ -25,7 +25,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, onOpenSearch })
 
   const rolesList: { role: Role; label: string }[] = [
     { role: 'SUPER_ADMIN', label: 'Super Admin' },
-    { role: 'HOSPITAL_ADMIN', label: 'Hospital Admin' },
     { role: 'BRANCH_ADMIN', label: 'Branch Admin' },
     { role: 'DOCTOR', label: 'Doctor (Dr. Sharma)' },
     { role: 'RECEPTIONIST', label: 'Receptionist (Front Desk)' },

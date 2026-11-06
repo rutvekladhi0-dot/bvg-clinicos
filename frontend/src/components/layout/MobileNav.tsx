@@ -4,9 +4,14 @@ import { LayoutDashboard, Users, Calendar, Clock, AlertOctagon } from 'lucide-re
 import { useAuth } from '../../context/AuthContext';
 
 export const MobileNav: React.FC = () => {
-  const { t } = useAuth();
+  const { t, role } = useAuth();
 
-  const links = [
+  const links = role === 'PATIENT' ? [
+    { path: '/', label: 'My Portal', icon: LayoutDashboard },
+    { path: '/telemedicine', label: 'Consult', icon: Calendar },
+    { path: '/prescriptions', label: 'Prescriptions', icon: Clock },
+    { path: '/emergency', label: t('emergency'), icon: AlertOctagon },
+  ] : [
     { path: '/', label: t('dashboard'), icon: LayoutDashboard },
     { path: '/patients', label: t('patients'), icon: Users },
     { path: '/appointments', label: t('appointments'), icon: Calendar },

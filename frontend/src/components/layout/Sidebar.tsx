@@ -31,56 +31,55 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: t('sectionClinicalCare'),
       items: [
         { path: '/', label: t('dashboard'), icon: LayoutDashboard, roles: ['*'] },
-        { path: '/patients', label: t('patients'), icon: Users, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'RECEPTIONIST', 'NURSE'] },
-        { path: '/appointments', label: t('appointments'), icon: Calendar, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'RECEPTIONIST'] },
-        { path: '/queue', label: t('queue'), icon: Clock, badge: 'Live', roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'RECEPTIONIST', 'NURSE'] },
-        { path: '/opd', label: t('opd'), icon: Stethoscope, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR'] },
-        { path: '/ipd', label: t('ipd'), icon: Bed, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'NURSE'] },
-        { path: '/emergency', label: t('emergency'), icon: AlertOctagon, badge: 'Red', badgeColor: 'bg-rose-500 text-white', roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'NURSE', 'OT_STAFF'] },
-        { path: '/operation-theatre', label: t('operationTheatre'), icon: Scissors, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'OT_STAFF'] },
-        { path: '/emr', label: t('emr'), icon: Activity, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'NURSE'] },
-        { path: '/prescriptions', label: t('prescriptions'), icon: FileText, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'PHARMACIST', 'NURSE', 'RECEPTIONIST'] },
+        { path: '/patients', label: t('patients'), icon: Users, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'RECEPTIONIST', 'NURSE'] },
+        { path: '/appointments', label: t('appointments'), icon: Calendar, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'RECEPTIONIST'] },
+        { path: '/queue', label: t('queue'), icon: Clock, badge: 'Live', roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'RECEPTIONIST', 'NURSE'] },
+        { path: '/opd', label: t('opd'), icon: Stethoscope, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR'] },
+        { path: '/ipd', label: t('ipd'), icon: Bed, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'NURSE'] },
+        { path: '/emergency', label: t('emergency'), icon: AlertOctagon, badge: 'Red', badgeColor: 'bg-rose-500 text-white', roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'NURSE', 'OT_STAFF'] },
+        { path: '/operation-theatre', label: t('operationTheatre'), icon: Scissors, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'OT_STAFF'] },
+        { path: '/emr', label: t('emr'), icon: Activity, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'NURSE'] },
+        { path: '/prescriptions', label: t('prescriptions'), icon: FileText, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'PHARMACIST', 'NURSE', 'RECEPTIONIST', 'PATIENT'] },
       ],
     },
     {
       titleKey: 'sectionDiagnosticsPharmacy',
       title: t('sectionDiagnosticsPharmacy'),
       items: [
-        { path: '/pharmacy', label: t('pharmacy'), icon: Pill, badge: 'Alerts', roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'PHARMACIST', 'DOCTOR'] },
-        { path: '/laboratory', label: t('laboratory'), icon: FlaskConical, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'LAB_TECHNICIAN', 'DOCTOR'] },
-        { path: '/radiology', label: t('radiology'), icon: Scan, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'RADIOLOGIST', 'DOCTOR'] },
-        { path: '/blood-bank', label: t('bloodBank'), icon: Droplets, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'LAB_TECHNICIAN', 'NURSE', 'DOCTOR'] },
+        { path: '/pharmacy', label: t('pharmacy'), icon: Pill, badge: 'Alerts', roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'PHARMACIST', 'DOCTOR'] },
+        { path: '/laboratory', label: t('laboratory'), icon: FlaskConical, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'LAB_TECHNICIAN', 'RADIOLOGIST', 'DOCTOR'] },
+        { path: '/blood-bank', label: t('bloodBank'), icon: Droplets, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'LAB_TECHNICIAN', 'NURSE', 'DOCTOR'] },
       ],
     },
     {
       titleKey: 'sectionBillingClaims',
       title: t('sectionBillingClaims'),
       items: [
-        { path: '/billing', label: t('billing'), icon: CreditCard, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'RECEPTIONIST'] },
-        { path: '/insurance', label: t('insurance'), icon: Shield, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT'] },
-        { path: '/accounting', label: t('accounting'), icon: Calculator, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT'] },
+        { path: '/billing', label: t('billing'), icon: CreditCard, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'RECEPTIONIST', 'PATIENT'] },
+        { path: '/insurance', label: t('insurance'), icon: Shield, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT'] },
+        { path: '/accounting', label: t('accounting'), icon: Calculator, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT'] },
       ],
     },
     {
       titleKey: 'sectionOperationsTelehealth',
       title: t('sectionOperationsTelehealth'),
       items: [
-        { path: '/doctors', label: t('doctors'), icon: UserCheck, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'RECEPTIONIST', 'HR_MANAGER'] },
-        { path: '/hr', label: t('hrStaff'), icon: UserCog, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'HR_MANAGER', 'ACCOUNTANT'] },
-        { path: '/branches', label: t('multiBranch'), icon: GitBranch, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN'] },
-        { path: '/telemedicine', label: t('telemedicine'), icon: Video, badge: 'Live', roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'PATIENT'] },
-        { path: '/portal', label: t('patientPortal'), icon: Users, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'PATIENT'] },
+        { path: '/doctors', label: t('doctors'), icon: UserCheck, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'RECEPTIONIST', 'HR_MANAGER'] },
+        { path: '/hr', label: t('hrStaff'), icon: UserCog, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'HR_MANAGER', 'ACCOUNTANT'] },
+        { path: '/branches', label: t('multiBranch'), icon: GitBranch, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN'] },
+        { path: '/telemedicine', label: t('telemedicine'), icon: Video, badge: 'Live', roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'PATIENT'] },
+        { path: '/portal', label: t('patientPortal'), icon: Users, roles: ['SUPER_ADMIN', 'PATIENT'] },
       ],
     },
     {
       titleKey: 'sectionIntelligenceGovernance',
       title: t('sectionIntelligenceGovernance'),
       items: [
-        { path: '/analytics', label: t('analytics'), icon: LineChart, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'DOCTOR'] },
-        { path: '/ai-insights', label: t('aiInsights'), icon: Sparkles, badge: 'AI', roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR'] },
+        { path: '/analytics', label: t('analytics'), icon: LineChart, roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'DOCTOR'] },
+        { path: '/ai-insights', label: t('aiInsights'), icon: Sparkles, badge: 'AI', roles: ['SUPER_ADMIN', 'BRANCH_ADMIN', 'DOCTOR'] },
         { path: '/notifications', label: t('notifications'), icon: Bell, roles: ['*'] },
-        { path: '/administration', label: t('administration'), icon: Key, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN'] },
-        { path: '/settings', label: t('settings'), icon: Settings, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN'] },
+        { path: '/administration', label: t('administration'), icon: Key, roles: ['SUPER_ADMIN'] },
+        { path: '/settings', label: t('settings'), icon: Settings, roles: ['SUPER_ADMIN'] },
       ],
     },
   ];
@@ -90,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .map((section) => ({
       ...section,
       items: section.items.filter((item) =>
-        item.roles.includes('*') || item.roles.includes(role) || role === 'SUPER_ADMIN' || role === 'HOSPITAL_ADMIN'
+        item.roles.includes('*') || item.roles.includes(role) || role === 'SUPER_ADMIN'
       ),
     }))
     .filter((section) => section.items.length > 0);

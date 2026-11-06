@@ -28,7 +28,6 @@ import { api } from '../services/api';
 
 const DEMO_PRESETS = [
   { username: 'admin', role: 'SUPER_ADMIN', label: 'Super Admin', desc: 'Enterprise multi-hospital oversight', icon: ShieldCheck, color: 'text-rose-600 bg-rose-50 dark:bg-rose-950/40' },
-  { username: 'hosp_admin', role: 'HOSPITAL_ADMIN', label: 'Hospital Admin', desc: 'Campus operations & master rosters', icon: Building, color: 'text-purple-600 bg-purple-50 dark:bg-purple-950/40' },
   { username: 'branch_admin', role: 'BRANCH_ADMIN', label: 'Branch Admin', desc: 'Branch scheduling & departments', icon: Building2, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40' },
   { username: 'dr_sharma', role: 'DOCTOR', label: 'Doctor (Dr. Sharma)', desc: 'Cardiology OPD, clinical Rx & orders', icon: Stethoscope, color: 'text-teal-600 bg-teal-50 dark:bg-teal-950/40' },
   { username: 'receptionist', role: 'RECEPTIONIST', label: 'Receptionist', desc: 'Front desk, walk-ins & queue tokens', icon: UserCheck, color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40' },

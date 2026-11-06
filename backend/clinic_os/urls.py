@@ -190,6 +190,7 @@ urlpatterns = [
     # Auth endpoints
     path('api/auth/login/', AuthLoginView.as_view(), name='auth-login'),
     path('api/auth/register/', AuthRegisterView.as_view(), name='auth-register'),
+    path('api/auth/signup/', AuthRegisterView.as_view(), name='auth-signup'),
     path('api/auth/init-admin/', InitAdminView.as_view(), name='auth-init-admin'),
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
     path('api/auth/me/', CurrentUserView.as_view(), name='auth-me'),

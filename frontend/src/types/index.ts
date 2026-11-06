@@ -121,16 +121,20 @@ export interface Appointment {
   patient: number;
   patient_name?: string;
   patient_phone?: string;
+  patient_uhid?: string;
   doctor: number;
   doctor_name?: string;
+  doctor_specialization?: string;
+  doctor_room?: string;
   department: number;
   department_name?: string;
   branch: number;
   branch_name?: string;
   appointment_date: string;
   time_slot: string;
-  appointment_type: 'Walk-in' | 'Scheduled' | 'Follow-up' | 'Telemedicine';
-  status: 'Scheduled' | 'Confirmed' | 'Checked-in' | 'In Consultation' | 'Completed' | 'Cancelled' | 'No Show';
+  appointment_type: 'Walk-in' | 'Scheduled' | 'Follow-up' | 'Telemedicine' | string;
+  status: 'Scheduled' | 'Confirmed' | 'Checked-in' | 'In Consultation' | 'Completed' | 'Cancelled' | 'No Show' | string;
+  chief_complaint?: string;
   notes?: string;
   created_at: string;
 }
@@ -140,14 +144,41 @@ export interface QueueToken {
   token_number: string;
   patient: number;
   patient_name?: string;
+  patient_uhid?: string;
   doctor: number;
   doctor_name?: string;
   room_number?: string;
-  priority: 'Normal' | 'Senior Citizen' | 'Pediatric' | 'Emergency';
-  status: 'Waiting' | 'Serving' | 'Completed' | 'Skipped' | 'Cancelled';
+  appointment?: number | null;
+  priority: 'Normal' | 'Senior Citizen' | 'Pediatric' | 'Emergency' | string;
+  status: 'Waiting' | 'Serving' | 'Completed' | 'Skipped' | 'Cancelled' | string;
   estimated_wait_minutes: number;
   created_at: string;
   called_at?: string;
+}
+
+export interface PrescriptionItem {
+  id?: number;
+  medicine_name: string;
+  dosage: string;
+  frequency: string;
+  duration_days: number;
+  instructions: string;
+}
+
+export interface Prescription {
+  id: number;
+  prescription_number?: string;
+  consultation?: number;
+  patient: number;
+  patient_name?: string;
+  patient_uhid?: string;
+  doctor: number;
+  doctor_name?: string;
+  doctor_specialization?: string;
+  diagnosis?: string;
+  notes?: string;
+  created_at: string;
+  items: PrescriptionItem[];
 }
 
 export interface Ward {

@@ -42,7 +42,27 @@ export const QueuePage: React.FC = () => {
   const handleCallToken = async (tokenId: number) => {
     try {
       const updated = await api.callQueueToken(tokenId);
-      showToast(`Token ${updated.token_number} is now being called!`, 'success');
+      const docName = updated.doctor_name || 'Consultant Doctor';
+      const room = updated.room_number || 'OPD-101';
+      const pat = updated.patient_name || 'Patient';
+
+      const payload = {
+        id: Date.now(),
+        tokenNumber: updated.token_number,
+        patientName: pat,
+        doctorName: docName,
+        roomNumber: room,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      try {
+        const bc = new BroadcastChannel('bvg_buzzer_channel');
+        bc.postMessage(payload);
+        bc.close();
+      } catch (e) {}
+      localStorage.setItem('bvg_buzzer_event', JSON.stringify(payload));
+
+      showToast(`Token ${updated.token_number} is now being called! Reception buzzer chime triggered.`, 'success');
       fetchLiveQueue();
     } catch (err: any) {
       showToast(err.message || 'Call failed', 'error');
