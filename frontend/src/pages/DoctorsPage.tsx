@@ -132,7 +132,7 @@ export const DoctorsPage: React.FC = () => {
           className="flex items-center justify-center px-4 py-2.5 bg-[#0F766E] hover:bg-[#0D6861] text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
         >
           <UserPlus className="w-4 h-4 mr-2" />
-          Add Doctor (नवीन डॉक्टर जोडा)
+          {t('addDoctor')}
         </button>
       </div>
 
@@ -250,7 +250,7 @@ export const DoctorsPage: React.FC = () => {
       <Modal
         isOpen={showAddDocModal}
         onClose={() => setShowAddDocModal(false)}
-        title="Add Consultant Doctor (नवीन डॉक्टर जोडा)"
+        title={t('addDoctor')}
         subtitle="Create clinical specialist profile, assign OPD chamber & setup login credentials"
         maxWidth="lg"
       >

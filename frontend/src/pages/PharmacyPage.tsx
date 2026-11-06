@@ -186,7 +186,7 @@ export const PharmacyPage: React.FC = () => {
             className="flex items-center justify-center px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 shadow-xs transition-colors"
           >
             <Pill className="w-4 h-4 mr-2 text-teal-600 dark:text-teal-400" />
-            Add Medicine (औषध जोडा)
+            {t('addMedicine')}
           </button>
           <button
             onClick={() => setShowSaleModal(true)}
@@ -230,7 +230,7 @@ export const PharmacyPage: React.FC = () => {
           }`}
         >
           <TrendingUp className="w-3.5 h-3.5 mr-1.5" />
-          Monthly Medicine Analytics (महिनानिहाय खप)
+          {t('monthlyMedicineAnalytics')}
         </button>
       </div>
 
@@ -363,7 +363,7 @@ export const PharmacyPage: React.FC = () => {
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                  Monthly Medicine Consumption & Demand Analytics (महिनानिहाय औषध खप)
+                  {t('monthlyMedicineAnalytics')}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Analyze which medicines sold/dispensed the highest across various calendar months
@@ -624,7 +624,7 @@ export const PharmacyPage: React.FC = () => {
       <Modal
         isOpen={showAddMedModal}
         onClose={() => setShowAddMedModal(false)}
-        title="Add Medicine to Pharmacy Master (नवीन औषध जोडा)"
+        title={t('addMedicine')}
         subtitle="Register pharmaceutical formulation with initial batch stock & MRP"
         maxWidth="lg"
       >

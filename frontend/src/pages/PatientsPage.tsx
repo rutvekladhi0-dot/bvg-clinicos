@@ -158,10 +158,10 @@ export const PatientsPage: React.FC = () => {
             </div>
             <div>
               <span className="text-xs font-bold text-slate-800 dark:text-white">
-                Date-Wise Patient Filter (तारीख निवडा - काल, परवा किंवा विशिष्ट तारीख)
+                {t('dateWisePatientFilter')}
               </span>
               <p className="text-[11px] text-slate-400">
-                Filter patients registered or visiting on a specific day for Reception & Administration
+                {t('dateWisePatientFilterSubtitle')}
               </p>
             </div>
           </div>
@@ -176,7 +176,7 @@ export const PatientsPage: React.FC = () => {
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
               }`}
             >
-              All Records (सर्व)
+              {t('allRecords')}
             </button>
             <button
               onClick={() => setDateFilter('TODAY')}
@@ -186,7 +186,7 @@ export const PatientsPage: React.FC = () => {
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
               }`}
             >
-              Today (आज)
+              {t('today')}
             </button>
             <button
               onClick={() => setDateFilter('YESTERDAY')}
@@ -196,7 +196,7 @@ export const PatientsPage: React.FC = () => {
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
               }`}
             >
-              Yesterday (काल)
+              {t('yesterday')}
             </button>
             <button
               onClick={() => setDateFilter('DAY_BEFORE')}
@@ -206,7 +206,7 @@ export const PatientsPage: React.FC = () => {
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
               }`}
             >
-              Day Before (परवा)
+              {t('dayBefore')}
             </button>
             <button
               onClick={() => setDateFilter('LAST_7_DAYS')}
@@ -216,7 +216,7 @@ export const PatientsPage: React.FC = () => {
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
               }`}
             >
-              Last 7 Days
+              {t('last7Days')}
             </button>
           </div>
         </div>
@@ -224,7 +224,7 @@ export const PatientsPage: React.FC = () => {
         {/* Custom Date Picker & Filter State Indicator */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
           <div className="flex items-center space-x-2">
-            <span className="text-slate-500 font-medium">Select Specific Calendar Date:</span>
+            <span className="text-slate-500 font-medium">{t('selectCalendarDate')}</span>
             <input
               type="date"
               value={customDate}
@@ -238,12 +238,12 @@ export const PatientsPage: React.FC = () => {
 
           {dateFilter !== 'ALL' && (
             <div className="flex items-center gap-2 text-teal-700 dark:text-teal-300 font-semibold bg-teal-50 dark:bg-teal-950/40 px-3 py-1 rounded-lg">
-              <span>Showing filtered patients for selected date ({patients.length} found)</span>
+              <span>{t('showingFilteredPatients')} ({patients.length})</span>
               <button
                 onClick={() => setDateFilter('ALL')}
                 className="text-[11px] underline hover:text-teal-900 dark:hover:text-teal-100 font-bold ml-1"
               >
-                Clear Date Filter
+                {t('clearDateFilter')}
               </button>
             </div>
           )}
@@ -307,14 +307,14 @@ export const PatientsPage: React.FC = () => {
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200/70 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-wider">
-                  <th className="py-3 px-4">UHID</th>
-                  <th className="py-3 px-4">Patient Name</th>
-                  <th className="py-3 px-4">Gender / Blood</th>
-                  <th className="py-3 px-4">Contact Phone</th>
-                  <th className="py-3 px-4">Visit / Reg Date</th>
-                  <th className="py-3 px-4">Allergies & Alerts</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-3 px-4">{t('uhid')}</th>
+                  <th className="py-3 px-4">{t('patientName')}</th>
+                  <th className="py-3 px-4">{t('genderBlood')}</th>
+                  <th className="py-3 px-4">{t('contactPhone')}</th>
+                  <th className="py-3 px-4">{t('visitRegDate')}</th>
+                  <th className="py-3 px-4">{t('allergiesAlerts')}</th>
+                  <th className="py-3 px-4">{t('status')}</th>
+                  <th className="py-3 px-4 text-right">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -336,7 +336,7 @@ export const PatientsPage: React.FC = () => {
                     </td>
                     <td className="py-3.5 px-4">
                       <span className="font-medium text-slate-700 dark:text-slate-300">
-                        {p.gender}
+                        {t(p.gender)}
                       </span>
                       <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
                         {p.blood_group}
@@ -347,7 +347,7 @@ export const PatientsPage: React.FC = () => {
                     </td>
                     <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
                       <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[11px] font-mono font-semibold">
-                        {(p as any).registered_at ? new Date((p as any).registered_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Today'}
+                        {(p as any).registered_at ? new Date((p as any).registered_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : t('today')}
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
@@ -372,7 +372,7 @@ export const PatientsPage: React.FC = () => {
                             : 'slate'
                         }
                       >
-                        {p.status}
+                        {t(p.status)}
                       </Badge>
                     </td>
                     <td className="py-3.5 px-4 text-right">

@@ -162,7 +162,7 @@ export const AccountingPage: React.FC = () => {
           }`}
         >
           <BarChart3 className="w-3.5 h-3.5 mr-1.5" />
-          Financial Account Analytics & P&L (आर्थिक विश्लेषण)
+          {t('financialAccountAnalytics')}
         </button>
       </div>
 

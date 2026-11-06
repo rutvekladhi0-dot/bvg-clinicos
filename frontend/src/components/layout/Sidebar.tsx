@@ -6,7 +6,7 @@ import {
   Bed, AlertOctagon, Scissors, FileText, Pill, FlaskConical,
   Scan, CreditCard, Shield, Droplets, UserCog, Calculator,
   GitBranch, Video, LineChart, Sparkles, Bell, Key, Settings,
-  ChevronLeft, ChevronRight, Activity, LogOut
+  ChevronLeft, ChevronRight, Activity, LogOut, X
 } from 'lucide-react';
 import { Role } from '../../types';
 
@@ -27,7 +27,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const allSections = [
     {
-      title: 'Clinical Care',
+      titleKey: 'sectionClinicalCare',
+      title: t('sectionClinicalCare'),
       items: [
         { path: '/', label: t('dashboard'), icon: LayoutDashboard, roles: ['*'] },
         { path: '/patients', label: t('patients'), icon: Users, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR', 'RECEPTIONIST', 'NURSE'] },
@@ -42,7 +43,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
-      title: 'Diagnostics & Pharmacy',
+      titleKey: 'sectionDiagnosticsPharmacy',
+      title: t('sectionDiagnosticsPharmacy'),
       items: [
         { path: '/pharmacy', label: t('pharmacy'), icon: Pill, badge: 'Alerts', roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'PHARMACIST', 'DOCTOR'] },
         { path: '/laboratory', label: t('laboratory'), icon: FlaskConical, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'LAB_TECHNICIAN', 'DOCTOR'] },
@@ -51,7 +53,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
-      title: 'Billing & Claims',
+      titleKey: 'sectionBillingClaims',
+      title: t('sectionBillingClaims'),
       items: [
         { path: '/billing', label: t('billing'), icon: CreditCard, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'RECEPTIONIST'] },
         { path: '/insurance', label: t('insurance'), icon: Shield, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT'] },
@@ -59,7 +62,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
-      title: 'Operations & Telehealth',
+      titleKey: 'sectionOperationsTelehealth',
+      title: t('sectionOperationsTelehealth'),
       items: [
         { path: '/doctors', label: t('doctors'), icon: UserCheck, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'RECEPTIONIST', 'HR_MANAGER'] },
         { path: '/hr', label: t('hrStaff'), icon: UserCog, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'HR_MANAGER', 'ACCOUNTANT'] },
@@ -69,7 +73,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
-      title: 'Intelligence & Governance',
+      titleKey: 'sectionIntelligenceGovernance',
+      title: t('sectionIntelligenceGovernance'),
       items: [
         { path: '/analytics', label: t('analytics'), icon: LineChart, roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'ACCOUNTANT', 'DOCTOR'] },
         { path: '/ai-insights', label: t('aiInsights'), icon: Sparkles, badge: 'AI', roles: ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'BRANCH_ADMIN', 'DOCTOR'] },
@@ -129,6 +134,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
           </NavLink>
+
+          {/* Mobile close button */}
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden transition-colors"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
 
           {/* Desktop collapse button */}
           <button

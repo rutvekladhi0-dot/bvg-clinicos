@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Role, Language, Branch } from '../types';
-import { translations } from '../i18n/translations';
+import { translations, dynamicLabels } from '../i18n/translations';
 import { api } from '../services/api';
 
 export interface Toast {
@@ -19,7 +19,7 @@ interface AuthContextType {
   branches: Branch[];
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: keyof typeof translations['en']) => string;
+  t: (key: keyof typeof translations['en'] | string) => string;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
   login: (username: string, password?: string) => Promise<void>;
@@ -56,7 +56,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRoleState] = useState<Role>('SUPER_ADMIN');
   const [branchId, setBranchIdState] = useState<number>(1);
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [language, setLanguageState] = useState<Language>('en');
+  const [language, setLanguageState] = useState<Language>(() => {
+    const saved = localStorage.getItem('bvg_lang') as Language;
+    return saved === 'mr' || saved === 'hi' || saved === 'en' ? saved : 'en';
+  });
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -110,9 +113,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const t = (key: keyof typeof translations['en']): string => {
-    const langDict = translations[language] || translations.en;
-    return (langDict as any)[key] || translations.en[key] || String(key);
+  const t = (key: keyof typeof translations['en'] | string): string => {
+    const langDict = (translations as any)[language] || translations.en;
+    if (langDict && langDict[key]) {
+      return langDict[key];
+    }
+    const dynamicMap = dynamicLabels[language] || dynamicLabels.en;
+    if (dynamicMap && dynamicMap[key]) {
+      return dynamicMap[key];
+    }
+    return (translations.en as any)[key] || String(key);
   };
 
   // Perform real authenticated login

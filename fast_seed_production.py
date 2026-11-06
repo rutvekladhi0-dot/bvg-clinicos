@@ -200,10 +200,11 @@ def run():
         })
         mid = m_res.get('id')
         if mid:
-            api_post('/batches/', {
-                'medicine': mid, 'supplier': supp_id, 'batch_number': batch_no,
-                'expiry_date': '2027-12-31', 'quantity': qty, 'purchase_price': cost,
-                'selling_price': mrp
+            api_post('/medicine-batches/', {
+                'medicine': mid, 'branch': 1, 'supplier': supp_id, 'batch_number': batch_no,
+                'barcode': f"BAR-{batch_no}",
+                'expiry_date': '2027-12-31', 'current_stock': qty, 'purchase_rate': cost,
+                'mrp': mrp, 'selling_price': mrp
             })
             print(f"  + Medicine: {name} ({gen}) -> Batch {batch_no} with {qty} units in stock")
 
@@ -213,15 +214,16 @@ def run():
     lcat_id = lcat_res.get('id', 1)
 
     tests_data = [
-        ('Complete Blood Count (CBC)', 'CBC', 450.00, 24, 'EDTA Whole Blood', 'WBC: 4000-11000, Hb: 13-17 g/dL, Platelets: 150k-450k'),
-        ('Lipid Profile Comprehensive', 'LIPID', 850.00, 12, 'Serum (Fasting 12h)', 'Cholesterol < 200, HDL > 40, LDL < 100, Triglycerides < 150'),
-        ('Glycated Hemoglobin (HbA1c)', 'HBA1C', 600.00, 6, 'Whole Blood EDTA', '< 5.7% Normal, 5.7-6.4% Prediabetes, >= 6.5% Diabetes'),
-        ('Liver Function Test (LFT)', 'LFT', 750.00, 12, 'Serum', 'Bilirubin: 0.2-1.2, SGOT: 5-40, SGPT: 7-56 U/L'),
+        ('Complete Blood Count (CBC)', 'CBC-01', 450.00, 24, 'EDTA Whole Blood', 'WBC: 4000-11000, Hb: 13-17 g/dL, Platelets: 150k-450k'),
+        ('Lipid Profile Comprehensive', 'LIPID-01', 850.00, 12, 'Serum (Fasting 12h)', 'Cholesterol < 200, HDL > 40, LDL < 100, Triglycerides < 150'),
+        ('Glycated Hemoglobin (HbA1c)', 'HBA1C-01', 600.00, 6, 'Whole Blood EDTA', '< 5.7% Normal, 5.7-6.4% Prediabetes, >= 6.5% Diabetes'),
+        ('Liver Function Test (LFT)', 'LFT-01', 750.00, 12, 'Serum', 'Bilirubin: 0.2-1.2, SGOT: 5-40, SGPT: 7-56 U/L'),
     ]
     for tname, tcode, price, tat, sample, ref in tests_data:
         api_post('/lab-tests/', {
-            'category': lcat_id, 'name': tname, 'code': tcode, 'price': price,
-            'tat_hours': tat, 'sample_type': sample, 'reference_range': ref, 'is_active': True
+            'category': lcat_id, 'name': tname, 'test_code': tcode, 'standard_fee': price,
+            'turnaround_hours': tat, 'sample_type': sample, 'reference_interval': ref,
+            'unit': 'g/dL' if 'CBC' in tcode else ('%' if 'HBA1C' in tcode else 'mg/dL')
         })
         print(f"  + Lab Test: {tname} (INR {price})")
 

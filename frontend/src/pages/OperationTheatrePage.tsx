@@ -131,7 +131,7 @@ export const OperationTheatrePage: React.FC = () => {
             className="flex items-center justify-center px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 shadow-xs transition-colors"
           >
             <Scissors className="w-4 h-4 mr-2 text-teal-600 dark:text-teal-400" />
-            Add OT Suite (नवीन ओटी सूट)
+            {t('addOTSuite')}
           </button>
           <button
             onClick={() => setShowNewModal(true)}
@@ -392,7 +392,7 @@ export const OperationTheatrePage: React.FC = () => {
       <Modal
         isOpen={showAddSuiteModal}
         onClose={() => setShowAddSuiteModal(false)}
-        title="Add Operation Theatre Suite (नवीन ओटी सूट जोडा)"
+        title={t('addOTSuite')}
         subtitle="Provision modular surgical suite with laminar air flow and anesthesia workstation"
         maxWidth="md"
       >

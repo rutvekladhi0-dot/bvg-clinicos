@@ -163,7 +163,7 @@ export const IPDManagementPage: React.FC = () => {
             className="flex items-center justify-center px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 shadow-xs transition-colors"
           >
             <BedIcon className="w-4 h-4 mr-2 text-teal-600 dark:text-teal-400" />
-            Add Inpatient Bed
+            {t('addInpatientBed')}
           </button>
           <button
             onClick={() => setShowAdmitModal(true)}
@@ -331,7 +331,7 @@ export const IPDManagementPage: React.FC = () => {
       <Modal
         isOpen={showAddBedModal}
         onClose={() => setShowAddBedModal(false)}
-        title="Add Inpatient Bed (नवीन बेड जोडा)"
+        title={t('addInpatientBed')}
         subtitle="Provision a new bed into ward matrix with pricing & clinical monitoring features"
         maxWidth="md"
       >
@@ -394,9 +394,9 @@ export const IPDManagementPage: React.FC = () => {
               onChange={(e) => setBedForm({ ...bedForm, status: e.target.value })}
               className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
             >
-              <option value="Available">Available (उपलब्ध)</option>
-              <option value="Occupied">Occupied (भरलेले)</option>
-              <option value="Maintenance">Maintenance (दुरुस्ती)</option>
+              <option value="Available">{t('available')}</option>
+              <option value="Occupied">{t('occupied')}</option>
+              <option value="Maintenance">{t('maintenance')}</option>
             </select>
           </div>
 

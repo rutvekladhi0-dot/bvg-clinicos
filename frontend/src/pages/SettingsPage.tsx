@@ -30,7 +30,7 @@ interface AuditLogItem {
 }
 
 export const SettingsPage: React.FC = () => {
-  const { language, setLanguage, theme, toggleTheme, addToast } = useAuth();
+  const { language, setLanguage, theme, toggleTheme, addToast, t } = useAuth();
   const [activeTab, setActiveTab] = useState<'general' | 'billing' | 'localization' | 'audit' | 'backup'>('general');
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
@@ -332,9 +332,9 @@ export const SettingsPage: React.FC = () => {
       {activeTab === 'localization' && (
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 space-y-6">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Multi-Lingual Regional Settings</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t('multiLingualSettings')}</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              BVG ClinicOS supports seamless live UI localization across English, Marathi (मराठी), and Hindi (हिंदी).
+              {t('multiLingualSubtitle')}
             </p>
           </div>
 
@@ -342,7 +342,7 @@ export const SettingsPage: React.FC = () => {
             <div
               onClick={() => {
                 setLanguage('en');
-                addToast('System language switched to English', 'info');
+                addToast(t('langSwitchedToast'), 'info');
               }}
               className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
                 language === 'en'
@@ -351,18 +351,18 @@ export const SettingsPage: React.FC = () => {
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="font-bold text-base text-slate-900 dark:text-white">English</span>
+                <span className="font-bold text-base text-slate-900 dark:text-white">{t('langEnglish')}</span>
                 {language === 'en' && <CheckCircle2 className="w-5 h-5 text-teal-600" />}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Primary international healthcare standard dialect.
+                {t('langEnglishDesc')}
               </p>
             </div>
 
             <div
               onClick={() => {
                 setLanguage('mr');
-                addToast('भाषा मराठी मध्ये बदलली आहे', 'info');
+                addToast(t('langSwitchedToast'), 'info');
               }}
               className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
                 language === 'mr'
@@ -371,18 +371,18 @@ export const SettingsPage: React.FC = () => {
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="font-bold text-base text-slate-900 dark:text-white">मराठी (Marathi)</span>
+                <span className="font-bold text-base text-slate-900 dark:text-white">{t('langMarathi')}</span>
                 {language === 'mr' && <CheckCircle2 className="w-5 h-5 text-teal-600" />}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                महाराष्ट्र राज्य प्रादेशिक आरोग्य सेवा भाषा.
+                {t('langMarathiDesc')}
               </p>
             </div>
 
             <div
               onClick={() => {
                 setLanguage('hi');
-                addToast('भाषा हिंदी में बदली गई है', 'info');
+                addToast(t('langSwitchedToast'), 'info');
               }}
               className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
                 language === 'hi'
@@ -391,11 +391,11 @@ export const SettingsPage: React.FC = () => {
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="font-bold text-base text-slate-900 dark:text-white">हिंदी (Hindi)</span>
+                <span className="font-bold text-base text-slate-900 dark:text-white">{t('langHindi')}</span>
                 {language === 'hi' && <CheckCircle2 className="w-5 h-5 text-teal-600" />}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                राष्ट्रीय राजभाषा एवं अखिल भारतीय संवाद.
+                {t('langHindiDesc')}
               </p>
             </div>
           </div>
