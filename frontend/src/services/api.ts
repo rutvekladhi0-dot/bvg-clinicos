@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://bvg-clinicos-api.onrender.com/api' : 'http://127.0.0.1:8000/api');
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('bvg_token');
@@ -55,6 +55,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 export const api = {
   // Auth
   login: (data: any) => request<any>('/auth/login/', { method: 'POST', body: JSON.stringify(data) }),
+  register: (data: any) => request<any>('/auth/register/', { method: 'POST', body: JSON.stringify(data) }),
   getMe: () => request<any>('/auth/me/'),
   forgotPassword: (email: string) => request<any>('/auth/forgot-password/', { method: 'POST', body: JSON.stringify({ email }) }),
   resetPassword: (data: { email: string; otp: string; new_password: string }) => request<any>('/auth/reset-password/', { method: 'POST', body: JSON.stringify(data) }),
@@ -87,6 +88,7 @@ export const api = {
   // Doctors
   getDoctors: (params: string = '') => request<any[]>(`/doctors/${params ? `?${params}` : ''}`),
   getDoctor: (id: number) => request<any>(`/doctors/${id}/`),
+  createDoctor: (data: any) => request<any>('/doctors/', { method: 'POST', body: JSON.stringify(data) }),
   toggleDoctorAvailability: (id: number) => request<any>(`/doctors/${id}/toggle-availability/`, { method: 'POST' }),
 
   // Appointments
@@ -116,6 +118,7 @@ export const api = {
   // IPD & Beds
   getWards: () => request<any[]>('/wards/'),
   getBeds: (params: string = '') => request<any[]>(`/beds/${params ? `?${params}` : ''}`),
+  createBed: (data: any) => request<any>('/beds/', { method: 'POST', body: JSON.stringify(data) }),
   getAdmissions: (params: string = '') => request<any[]>(`/admissions/${params ? `?${params}` : ''}`),
   createAdmission: (data: any) => request<any>('/admissions/', { method: 'POST', body: JSON.stringify(data) }),
   dischargePatient: (id: number, data: any) => request<any>(`/admissions/${id}/discharge/`, { method: 'POST', body: JSON.stringify(data) }),
@@ -129,14 +132,17 @@ export const api = {
 
   // Operation Theatre
   getOTRooms: () => request<any[]>('/ot-rooms/'),
+  createOTRoom: (data: any) => request<any>('/ot-rooms/', { method: 'POST', body: JSON.stringify(data) }),
   getSurgeries: (params: string = '') => request<any[]>(`/surgeries/${params ? `?${params}` : ''}`),
   createSurgery: (data: any) => request<any>('/surgeries/', { method: 'POST', body: JSON.stringify(data) }),
   getOTEquipment: () => request<any[]>('/ot-equipment/'),
 
   // Pharmacy
   getMedicines: (params: string = '') => request<any[]>(`/medicines/${params ? `?${params}` : ''}`),
+  createMedicine: (data: any) => request<any>('/medicines/', { method: 'POST', body: JSON.stringify(data) }),
   getMedicineBatches: () => request<any[]>('/medicine-batches/'),
   getStockAlerts: () => request<any>('/medicine-batches/alerts/'),
+  getMedicineAnalytics: (params: string = '') => request<any>(`/medicines/monthly-analytics/${params ? `?${params}` : ''}`),
   getPharmacySales: () => request<any[]>('/pharmacy-sales/'),
   createPharmacySale: (data: any) => request<any>('/pharmacy-sales/', { method: 'POST', body: JSON.stringify(data) }),
   getSuppliers: () => request<any[]>('/suppliers/'),
@@ -144,6 +150,7 @@ export const api = {
   // Laboratory
   getLabCategories: () => request<any[]>('/lab-categories/'),
   getLabTests: () => request<any[]>('/lab-tests/'),
+  createLabTest: (data: any) => request<any>('/lab-tests/', { method: 'POST', body: JSON.stringify(data) }),
   getLabOrders: (params: string = '') => request<any[]>(`/lab-orders/${params ? `?${params}` : ''}`),
   createLabOrder: (data: any) => request<any>('/lab-orders/', { method: 'POST', body: JSON.stringify(data) }),
   collectLabSample: (id: number) => request<any>(`/lab-orders/${id}/collect-sample/`, { method: 'POST' }),

@@ -35,6 +35,31 @@ class PatientViewSet(viewsets.ModelViewSet):
         if blood_group:
             qs = qs.filter(blood_group=blood_group)
 
+        # Date-wise patient filtering (Today, Yesterday, Day Before, Custom Date)
+        date_param = self.request.query_params.get('date')
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+
+        if date_param:
+            qs = qs.filter(
+                Q(registered_at__date=date_param) |
+                Q(appointments__appointment_date=date_param) |
+                Q(admissions__admission_date__date=date_param) |
+                Q(queue_tokens__created_at__date=date_param)
+            ).distinct()
+        elif start_date and end_date:
+            qs = qs.filter(
+                Q(registered_at__date__range=[start_date, end_date]) |
+                Q(appointments__appointment_date__range=[start_date, end_date]) |
+                Q(admissions__admission_date__date__range=[start_date, end_date]) |
+                Q(queue_tokens__created_at__date__range=[start_date, end_date])
+            ).distinct()
+        elif start_date:
+            qs = qs.filter(
+                Q(registered_at__date__gte=start_date) |
+                Q(appointments__appointment_date__gte=start_date)
+            ).distinct()
+
         search_q = self.request.query_params.get('search')
         if search_q:
             qs = qs.filter(

@@ -3,23 +3,51 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { Doctor } from '../types';
 import { Badge } from '../components/common/Badge';
+import { Modal } from '../components/common/Modal';
 import { EmptyState } from '../components/common/EmptyState';
 import {
   UserCheck, Stethoscope, Clock, Award, Building2,
-  DollarSign, CheckCircle2, XCircle, Search
+  DollarSign, CheckCircle2, XCircle, Search, UserPlus, Plus
 } from 'lucide-react';
 
 export const DoctorsPage: React.FC = () => {
   const { branchId, t, showToast } = useAuth();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [deptFilter, setDeptFilter] = useState('All');
+
+  // Add Doctor Modal
+  const [showAddDocModal, setShowAddDocModal] = useState(false);
+  const [docForm, setDocForm] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    username: '',
+    password: 'Clinicos@2026',
+    specialization: 'Cardiology',
+    qualification: 'MBBS, MD (Medicine), DM (Cardiology)',
+    registration_council_number: 'MMC-2026-1049',
+    experience_years: 8,
+    consultation_fee: 600,
+    follow_up_fee: 350,
+    room_number: 'OPD-105',
+    department: '',
+  });
 
   const fetchDoctors = async () => {
     setLoading(true);
     try {
-      const data = await api.getDoctors(`branch=${branchId}`);
-      setDoctors(data);
+      const [docsData, deptsData] = await Promise.all([
+        api.getDoctors(`branch=${branchId}`),
+        api.getDepartments(branchId),
+      ]);
+      setDoctors(docsData);
+      setDepartmentsList(deptsData);
+      if (deptsData.length > 0 && !docForm.department) {
+        setDocForm(prev => ({ ...prev, department: String(deptsData[0].id) }));
+      }
     } catch (err) {
       console.error('Error fetching doctors', err);
     } finally {
@@ -30,6 +58,45 @@ export const DoctorsPage: React.FC = () => {
   useEffect(() => {
     fetchDoctors();
   }, [branchId]);
+
+  const handleAddDoctorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docForm.first_name || !docForm.specialization) {
+      showToast('First name and specialization are required', 'warning');
+      return;
+    }
+    try {
+      await api.createDoctor({
+        ...docForm,
+        branch: branchId,
+        department: docForm.department ? Number(docForm.department) : null,
+        consultation_fee: Number(docForm.consultation_fee),
+        follow_up_fee: Number(docForm.follow_up_fee),
+        experience_years: Number(docForm.experience_years),
+      });
+      showToast(`Dr. ${docForm.first_name} ${docForm.last_name} profile created successfully!`, 'success');
+      setShowAddDocModal(false);
+      setDocForm({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        username: '',
+        password: 'Clinicos@2026',
+        specialization: 'Cardiology',
+        qualification: 'MBBS, MD',
+        registration_council_number: 'MMC-2026-1049',
+        experience_years: 8,
+        consultation_fee: 600,
+        follow_up_fee: 350,
+        room_number: 'OPD-105',
+        department: departmentsList.length > 0 ? String(departmentsList[0].id) : '',
+      });
+      fetchDoctors();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to add doctor', 'error');
+    }
+  };
 
   const handleToggleAvailability = async (id: number) => {
     try {
@@ -60,6 +127,13 @@ export const DoctorsPage: React.FC = () => {
             Consultant roster, duty rosters, availability management & consultation fees
           </p>
         </div>
+        <button
+          onClick={() => setShowAddDocModal(true)}
+          className="flex items-center justify-center px-4 py-2.5 bg-[#0F766E] hover:bg-[#0D6861] text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
+        >
+          <UserPlus className="w-4 h-4 mr-2" />
+          Add Doctor (नवीन डॉक्टर जोडा)
+        </button>
       </div>
 
       {/* Dept Filter Tabs */}
@@ -171,6 +245,192 @@ export const DoctorsPage: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Add Doctor Modal */}
+      <Modal
+        isOpen={showAddDocModal}
+        onClose={() => setShowAddDocModal(false)}
+        title="Add Consultant Doctor (नवीन डॉक्टर जोडा)"
+        subtitle="Create clinical specialist profile, assign OPD chamber & setup login credentials"
+        maxWidth="lg"
+      >
+        <form onSubmit={handleAddDoctorSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                First Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={docForm.first_name}
+                onChange={(e) => setDocForm({ ...docForm, first_name: e.target.value })}
+                placeholder="e.g. Ramesh"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Last Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={docForm.last_name}
+                onChange={(e) => setDocForm({ ...docForm, last_name: e.target.value })}
+                placeholder="e.g. Shinde"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Medical Specialization *
+              </label>
+              <input
+                type="text"
+                required
+                value={docForm.specialization}
+                onChange={(e) => setDocForm({ ...docForm, specialization: e.target.value })}
+                placeholder="e.g. Interventional Cardiology, Orthopedic Surgery"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Hospital Department
+              </label>
+              <select
+                value={docForm.department}
+                onChange={(e) => setDocForm({ ...docForm, department: e.target.value })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              >
+                {departmentsList.map((dept) => (
+                  <option key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Academic Qualifications
+              </label>
+              <input
+                type="text"
+                value={docForm.qualification}
+                onChange={(e) => setDocForm({ ...docForm, qualification: e.target.value })}
+                placeholder="e.g. MBBS, MD, DM (Cardiology)"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Registration / Council License No
+              </label>
+              <input
+                type="text"
+                value={docForm.registration_council_number}
+                onChange={(e) => setDocForm({ ...docForm, registration_council_number: e.target.value })}
+                placeholder="e.g. MMC-2026-8891"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                OPD Fee (₹)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={docForm.consultation_fee}
+                onChange={(e) => setDocForm({ ...docForm, consultation_fee: Number(e.target.value) })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Follow-up Fee (₹)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={docForm.follow_up_fee}
+                onChange={(e) => setDocForm({ ...docForm, follow_up_fee: Number(e.target.value) })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Cabin / Room No
+              </label>
+              <input
+                type="text"
+                value={docForm.room_number}
+                onChange={(e) => setDocForm({ ...docForm, room_number: e.target.value })}
+                placeholder="OPD-105"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Contact Phone
+              </label>
+              <input
+                type="tel"
+                value={docForm.phone}
+                onChange={(e) => setDocForm({ ...docForm, phone: e.target.value })}
+                placeholder="9822001122"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Login Password
+              </label>
+              <input
+                type="text"
+                value={docForm.password}
+                onChange={(e) => setDocForm({ ...docForm, password: e.target.value })}
+                placeholder="Clinicos@2026"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 flex justify-end space-x-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => setShowAddDocModal(false)}
+              className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0D6861] rounded-xl shadow-sm"
+            >
+              Save Doctor Profile
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

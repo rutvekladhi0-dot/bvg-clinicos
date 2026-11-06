@@ -32,6 +32,16 @@ export const IPDManagementPage: React.FC = () => {
     diagnosis: '',
   });
 
+  // Add Bed Modal
+  const [showAddBedModal, setShowAddBedModal] = useState(false);
+  const [bedForm, setBedForm] = useState({
+    ward: '',
+    bed_number: '',
+    daily_charge: 1500,
+    features: 'Oxygen Port, Cardiac Monitor Point, Fowler Bed',
+    status: 'Available',
+  });
+
   // Discharge Modal
   const [dischargeTarget, setDischargeTarget] = useState<Admission | null>(null);
   const [dischargeForm, setDischargeForm] = useState({
@@ -82,6 +92,35 @@ export const IPDManagementPage: React.FC = () => {
     }
   };
 
+  const handleAddBedSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bedForm.ward || !bedForm.bed_number) {
+      showToast('Please select a ward and enter a bed number', 'warning');
+      return;
+    }
+    try {
+      await api.createBed({
+        ward: Number(bedForm.ward),
+        bed_number: bedForm.bed_number.trim(),
+        daily_charge: Number(bedForm.daily_charge),
+        features: bedForm.features,
+        status: bedForm.status,
+      });
+      showToast(`Bed ${bedForm.bed_number} added successfully to Ward!`, 'success');
+      setShowAddBedModal(false);
+      setBedForm({
+        ward: wards.length > 0 ? String(wards[0].id) : '',
+        bed_number: '',
+        daily_charge: 1500,
+        features: 'Oxygen Port, Cardiac Monitor Point, Fowler Bed',
+        status: 'Available',
+      });
+      fetchData();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to add bed', 'error');
+    }
+  };
+
   const handleDischargeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dischargeTarget) return;
@@ -113,13 +152,27 @@ export const IPDManagementPage: React.FC = () => {
             Ward management, real-time bed allocation matrix, nursing rounds & discharge billing
           </p>
         </div>
-        <button
-          onClick={() => setShowAdmitModal(true)}
-          className="flex items-center justify-center px-4 py-2.5 bg-[#0F766E] hover:bg-[#0D6861] text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
-        >
-          <UserPlus className="w-4 h-4 mr-2" />
-          {t('admitPatient')}
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => {
+              if (wards.length > 0 && !bedForm.ward) {
+                setBedForm(prev => ({ ...prev, ward: String(wards[0].id) }));
+              }
+              setShowAddBedModal(true);
+            }}
+            className="flex items-center justify-center px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 shadow-xs transition-colors"
+          >
+            <BedIcon className="w-4 h-4 mr-2 text-teal-600 dark:text-teal-400" />
+            Add Inpatient Bed
+          </button>
+          <button
+            onClick={() => setShowAdmitModal(true)}
+            className="flex items-center justify-center px-4 py-2.5 bg-[#0F766E] hover:bg-[#0D6861] text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            {t('admitPatient')}
+          </button>
+        </div>
       </div>
 
       {/* Ward Filter & Status Legend */}
@@ -273,6 +326,110 @@ export const IPDManagementPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Add Bed Modal */}
+      <Modal
+        isOpen={showAddBedModal}
+        onClose={() => setShowAddBedModal(false)}
+        title="Add Inpatient Bed (नवीन बेड जोडा)"
+        subtitle="Provision a new bed into ward matrix with pricing & clinical monitoring features"
+        maxWidth="md"
+      >
+        <form onSubmit={handleAddBedSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Select Ward / Unit
+            </label>
+            <select
+              required
+              value={bedForm.ward}
+              onChange={(e) => setBedForm({ ...bedForm, ward: e.target.value })}
+              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+            >
+              <option value="">-- Choose Ward --</option>
+              {wards.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name} ({w.ward_type} - {w.floor})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Bed Number / Identifier
+              </label>
+              <input
+                type="text"
+                required
+                value={bedForm.bed_number}
+                onChange={(e) => setBedForm({ ...bedForm, bed_number: e.target.value })}
+                placeholder="e.g. Bed-106 or ICU-05"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Daily Rate (₹)
+              </label>
+              <input
+                type="number"
+                required
+                min={0}
+                value={bedForm.daily_charge}
+                onChange={(e) => setBedForm({ ...bedForm, daily_charge: Number(e.target.value) })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Initial Bed Status
+            </label>
+            <select
+              value={bedForm.status}
+              onChange={(e) => setBedForm({ ...bedForm, status: e.target.value })}
+              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+            >
+              <option value="Available">Available (उपलब्ध)</option>
+              <option value="Occupied">Occupied (भरलेले)</option>
+              <option value="Maintenance">Maintenance (दुरुस्ती)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Clinical Features & Attachments
+            </label>
+            <input
+              type="text"
+              value={bedForm.features}
+              onChange={(e) => setBedForm({ ...bedForm, features: e.target.value })}
+              placeholder="e.g. Oxygen Port, Cardiac Monitor Point, Ventilator Ready, Fowler Bed"
+              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+            />
+          </div>
+
+          <div className="pt-4 flex justify-end space-x-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => setShowAddBedModal(false)}
+              className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0D6861] rounded-xl shadow-sm"
+            >
+              Save Inpatient Bed
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Patient Admission Modal */}
       <Modal

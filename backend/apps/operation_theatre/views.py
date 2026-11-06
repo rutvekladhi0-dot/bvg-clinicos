@@ -5,11 +5,20 @@ from rest_framework.decorators import action
 from .models import OTRoom, Surgery, OTEquipment
 from .serializers import OTRoomSerializer, SurgerySerializer, OTEquipmentSerializer
 from apps.patients.models import PatientTimeline
+from apps.core.models import Branch
 
 class OTRoomViewSet(viewsets.ModelViewSet):
     queryset = OTRoom.objects.all()
     serializer_class = OTRoomSerializer
     permission_classes = [permissions.AllowAny]
+
+    def perform_create(self, serializer):
+        branch = self.request.data.get('branch')
+        if not branch:
+            default_branch = Branch.objects.first()
+            serializer.save(branch=default_branch)
+        else:
+            serializer.save()
 
 class SurgeryViewSet(viewsets.ModelViewSet):
     queryset = Surgery.objects.all()

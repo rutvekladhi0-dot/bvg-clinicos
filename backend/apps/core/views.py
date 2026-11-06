@@ -55,18 +55,21 @@ class UserViewSet(viewsets.ModelViewSet):
             qs = qs.filter(branch_id=branch_id)
         return qs
 
-    @action(detail=False, methods=['post'], url_path='create-user')
-    def create_custom_user(self, request):
+    def create(self, request, *args, **kwargs):
         data = request.data
-        username = data.get('username')
-        password = data.get('password', 'Clinicos@2026')
-        email = data.get('email', '')
+        username = data.get('username', '').strip()
+        password = data.get('password', 'Clinicos@2026').strip()
+        email = data.get('email', '').strip()
         role = data.get('role', 'PATIENT')
-        first_name = data.get('first_name', '')
-        last_name = data.get('last_name', '')
+        first_name = data.get('first_name', '').strip()
+        last_name = data.get('last_name', '').strip()
         branch_id = data.get('branch')
+        phone = data.get('phone', '').strip()
 
-        if User.objects.filter(username=username).exists():
+        if not username:
+            return Response({'error': 'Username is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(username__iexact=username).exists():
             return Response({'error': 'Username already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.create_user(
@@ -76,9 +79,14 @@ class UserViewSet(viewsets.ModelViewSet):
             first_name=first_name,
             last_name=last_name,
             role=role,
+            phone=phone,
             branch_id=branch_id
         )
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'], url_path='create-user')
+    def create_custom_user(self, request):
+        return self.create(request)
 
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AuditLog.objects.all()
@@ -184,6 +192,98 @@ class AuthLoginView(APIView):
             'refresh': str(refresh),
             'user': UserSerializer(user).data
         })
+
+class AuthRegisterView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        data = request.data
+        username = data.get('username', '').strip()
+        email = data.get('email', '').strip()
+        password = data.get('password', '').strip()
+        first_name = data.get('first_name', '').strip()
+        last_name = data.get('last_name', '').strip()
+        role = data.get('role', 'PATIENT').strip()
+        phone = data.get('phone', '').strip()
+
+        if not username or not password:
+            return Response({'error': 'Please provide both username and password.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(username__iexact=username).exists():
+            return Response({'error': 'Username already exists. Please pick another username.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if email and User.objects.filter(email__iexact=email).exists():
+            return Response({'error': 'An account with this email address already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Assign default branch and hospital if not specified
+        branch = Branch.objects.first()
+        hospital = Hospital.objects.first()
+
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            role=role,
+            phone=phone,
+            branch=branch,
+            hospital=hospital
+        )
+
+        # If role is PATIENT, create or link a patient record
+        if role == 'PATIENT':
+            try:
+                import datetime
+                from apps.patients.models import Patient
+                year = datetime.date.today().year
+                last_patient = Patient.objects.filter(uhid__startswith=f"BVG-{year}-").order_by('-id').first()
+                if last_patient and last_patient.uhid:
+                    try:
+                        last_num = int(last_patient.uhid.split('-')[-1])
+                        new_num = last_num + 1
+                    except ValueError:
+                        new_num = Patient.objects.count() + 1001
+                else:
+                    new_num = 1001
+                uhid = f"BVG-{year}-{new_num:04d}"
+
+                Patient.objects.create(
+                    user=user,
+                    branch=branch,
+                    uhid=uhid,
+                    first_name=first_name or username,
+                    last_name=last_name,
+                    email=email,
+                    phone=phone or '9876543210',
+                    date_of_birth='1990-01-01',
+                    gender='Other',
+                    blood_group='O+',
+                    status='Outpatient'
+                )
+            except Exception as e:
+                print(f"Warning: Patient profile auto-creation: {e}")
+
+        # Issue JWT tokens for instant automatic login!
+        refresh = RefreshToken.for_user(user)
+
+        AuditLog.objects.create(
+            user=user,
+            branch=branch,
+            action='USER_REGISTER',
+            model_name='User',
+            object_id=str(user.id),
+            details={'method': 'JWT_SELF_REGISTRATION', 'role': role},
+            ip_address=str(request.META.get('REMOTE_ADDR', '127.0.0.1'))[:50]
+        )
+
+        return Response({
+            'success': True,
+            'message': 'Account registered successfully!',
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': UserSerializer(user).data
+        }, status=status.HTTP_201_CREATED)
 
 class CurrentUserView(APIView):
     permission_classes = [permissions.IsAuthenticated]

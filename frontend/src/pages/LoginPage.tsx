@@ -43,7 +43,7 @@ const DEMO_PRESETS = [
 ];
 
 export const LoginPage: React.FC = () => {
-  const { login, switchDemoRole, addToast } = useAuth();
+  const { login, register, switchDemoRole, addToast } = useAuth();
   const [activeTab, setActiveTab] = useState<'signin' | 'demo' | 'register'>('signin');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -65,8 +65,25 @@ export const LoginPage: React.FC = () => {
     password: '',
     first_name: '',
     last_name: '',
+    phone: '',
     role: 'PATIENT',
   });
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regData.username || !regData.password) {
+      addToast('Please enter both username and password', 'warning');
+      return;
+    }
+    setLoading(true);
+    try {
+      await register(regData);
+    } catch (err: any) {
+      // toast shown in context
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -331,14 +348,7 @@ export const LoginPage: React.FC = () => {
 
           {/* Tab 3: Registration */}
           {activeTab === 'register' && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                addToast('Patient registration complete. Please sign in.', 'success');
-                setActiveTab('signin');
-              }}
-              className="space-y-3"
-            >
+            <form onSubmit={handleRegister} className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -368,32 +378,66 @@ export const LoginPage: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={regData.email}
-                  onChange={(e) => setRegData({ ...regData, email: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs bg-slate-50 dark:bg-slate-800"
-                  placeholder="suresh@example.com"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Work or Personal Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={regData.email}
+                    onChange={(e) => setRegData({ ...regData, email: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs bg-slate-50 dark:bg-slate-800"
+                    placeholder="suresh@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Mobile Phone
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={regData.phone}
+                    onChange={(e) => setRegData({ ...regData, phone: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs bg-slate-50 dark:bg-slate-800"
+                    placeholder="9876543210"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Choose Username
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={regData.username}
-                  onChange={(e) => setRegData({ ...regData, username: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs bg-slate-50 dark:bg-slate-800"
-                  placeholder="suresh.kadam"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Choose Username
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={regData.username}
+                    onChange={(e) => setRegData({ ...regData, username: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs bg-slate-50 dark:bg-slate-800"
+                    placeholder="suresh.kadam"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Account Role
+                  </label>
+                  <select
+                    value={regData.role}
+                    onChange={(e) => setRegData({ ...regData, role: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs bg-slate-50 dark:bg-slate-800"
+                  >
+                    <option value="PATIENT">Patient Portal</option>
+                    <option value="DOCTOR">Doctor (Consultant)</option>
+                    <option value="NURSE">Nursing Staff</option>
+                    <option value="RECEPTIONIST">Receptionist</option>
+                    <option value="PHARMACIST">Pharmacist</option>
+                    <option value="LAB_TECHNICIAN">Lab Technician</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -406,15 +450,17 @@ export const LoginPage: React.FC = () => {
                   value={regData.password}
                   onChange={(e) => setRegData({ ...regData, password: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs bg-slate-50 dark:bg-slate-800"
-                  placeholder="••••••••"
+                  placeholder="Create secure password"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-semibold transition-all mt-2"
+                disabled={loading}
+                className="w-full py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-semibold transition-all mt-2 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                Create Patient Account
+                <span>{loading ? 'Creating Account & Generating JWT...' : 'Create Account & Sign In'}</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
             </form>
           )}

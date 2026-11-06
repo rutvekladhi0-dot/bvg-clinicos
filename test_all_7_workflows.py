@@ -3,7 +3,7 @@ import json
 import sys
 import datetime
 
-base = 'http://127.0.0.1:8000/api'
+base = sys.argv[1].rstrip('/') if len(sys.argv) > 1 else 'http://127.0.0.1:8000/api'
 
 def post_json(endpoint, data, token=None):
     headers = {'Content-Type': 'application/json'}
@@ -270,12 +270,16 @@ def test_workflow_4(token):
     print("WORKFLOW 4: LAB ORDER -> SAMPLE COLLECTION -> APPROVAL -> LAB INVOICING")
     print("=" * 75)
 
+    tests_res = get_json('/lab-tests/', token=token)
+    tests = tests_res.get('results', tests_res) if isinstance(tests_res, dict) else tests_res
+    test_id = tests[0]['id'] if len(tests) > 0 else 1
+
     order_data = {
         'branch': 1,
         'patient': 1,
         'doctor': 1,
         'clinical_remarks': 'Pre-op diagnostic hemogram & electrolyte panel',
-        'items': [{'test': 1}]
+        'items': [{'test': test_id}]
     }
     order = post_json('/lab-orders/', order_data, token=token)
     o_id = order['id']

@@ -107,17 +107,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
         } ${isCollapsed ? 'w-20' : 'w-72'}`}
       >
         {/* Brand Header */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <NavLink to="/" className="flex items-center space-x-3 overflow-hidden">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0F766E] to-[#14B8A6] flex items-center justify-center text-white shadow-md shadow-teal-700/20 shrink-0">
+        <div className={`relative flex items-center h-16 border-b border-slate-100 dark:border-slate-800 shrink-0 transition-all ${
+          isCollapsed ? 'justify-center px-2' : 'justify-between px-4'
+        }`}>
+          <NavLink
+            to="/"
+            className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} group`}
+            title="BVG ClinicOS Enterprise"
+          >
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0F766E] to-[#14B8A6] flex items-center justify-center text-white shadow-md shadow-teal-700/20 shrink-0 group-hover:scale-105 transition-transform">
               <Activity className="w-6 h-6 stroke-[2.5]" />
             </div>
             {!isCollapsed && (
-              <div className="flex flex-col">
-                <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white leading-none">
+              <div className="flex flex-col min-w-0">
+                <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white leading-none whitespace-nowrap">
                   BVG <span className="text-[#0F766E] dark:text-[#14B8A6]">ClinicOS</span>
                 </span>
-                <span className="text-[10px] text-slate-400 font-medium tracking-wide uppercase mt-1">
+                <span className="text-[10px] text-slate-400 font-medium tracking-wide uppercase mt-1 whitespace-nowrap">
                   Enterprise Suite
                 </span>
               </div>
@@ -127,10 +133,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Desktop collapse button */}
           <button
             onClick={onToggleCollapse}
-            className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className={`hidden lg:flex items-center justify-center text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-all ${
+              isCollapsed
+                ? 'absolute -right-3 top-5 w-6 h-6 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-md hover:scale-110 z-50 text-teal-600'
+                : 'p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
             title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
           >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {isCollapsed ? <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
 

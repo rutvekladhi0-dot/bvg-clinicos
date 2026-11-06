@@ -17,6 +17,10 @@ export const PatientsPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
+  // Date Wise Filtering
+  const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'YESTERDAY' | 'DAY_BEFORE' | 'LAST_7_DAYS' | 'CUSTOM'>('ALL');
+  const [customDate, setCustomDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
   // Registration Modal
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [regForm, setRegForm] = useState({
@@ -44,6 +48,27 @@ export const PatientsPage: React.FC = () => {
       if (branchId) params.append('branch', String(branchId));
       if (search) params.append('search', search);
       if (statusFilter !== 'All') params.append('status', statusFilter);
+
+      // Date filtering logic
+      const now = new Date();
+      const formatDate = (d: Date) => d.toISOString().split('T')[0];
+
+      if (dateFilter === 'TODAY') {
+        params.append('date', formatDate(now));
+      } else if (dateFilter === 'YESTERDAY') {
+        const yest = new Date(now.getTime() - 86400000);
+        params.append('date', formatDate(yest));
+      } else if (dateFilter === 'DAY_BEFORE') {
+        const dayBefore = new Date(now.getTime() - 172800000);
+        params.append('date', formatDate(dayBefore));
+      } else if (dateFilter === 'LAST_7_DAYS') {
+        const last7 = new Date(now.getTime() - 7 * 86400000);
+        params.append('start_date', formatDate(last7));
+        params.append('end_date', formatDate(now));
+      } else if (dateFilter === 'CUSTOM' && customDate) {
+        params.append('date', customDate);
+      }
+
       const data = await api.getPatients(params.toString());
       setPatients(data);
     } catch (err) {
@@ -55,7 +80,7 @@ export const PatientsPage: React.FC = () => {
 
   useEffect(() => {
     fetchPatients();
-  }, [branchId, statusFilter]);
+  }, [branchId, statusFilter, dateFilter, customDate]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,6 +149,107 @@ export const PatientsPage: React.FC = () => {
         </button>
       </div>
 
+      {/* Date-Wise Patient Filter Bar (Receptionist & Admin Feature) */}
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-2">
+            <div className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400">
+              <Calendar className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-slate-800 dark:text-white">
+                Date-Wise Patient Filter (तारीख निवडा - काल, परवा किंवा विशिष्ट तारीख)
+              </span>
+              <p className="text-[11px] text-slate-400">
+                Filter patients registered or visiting on a specific day for Reception & Administration
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Date Chips */}
+          <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 max-w-full">
+            <button
+              onClick={() => setDateFilter('ALL')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                dateFilter === 'ALL'
+                  ? 'bg-teal-700 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+              }`}
+            >
+              All Records (सर्व)
+            </button>
+            <button
+              onClick={() => setDateFilter('TODAY')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                dateFilter === 'TODAY'
+                  ? 'bg-teal-700 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+              }`}
+            >
+              Today (आज)
+            </button>
+            <button
+              onClick={() => setDateFilter('YESTERDAY')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                dateFilter === 'YESTERDAY'
+                  ? 'bg-teal-700 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+              }`}
+            >
+              Yesterday (काल)
+            </button>
+            <button
+              onClick={() => setDateFilter('DAY_BEFORE')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                dateFilter === 'DAY_BEFORE'
+                  ? 'bg-teal-700 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+              }`}
+            >
+              Day Before (परवा)
+            </button>
+            <button
+              onClick={() => setDateFilter('LAST_7_DAYS')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                dateFilter === 'LAST_7_DAYS'
+                  ? 'bg-teal-700 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+              }`}
+            >
+              Last 7 Days
+            </button>
+          </div>
+        </div>
+
+        {/* Custom Date Picker & Filter State Indicator */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+          <div className="flex items-center space-x-2">
+            <span className="text-slate-500 font-medium">Select Specific Calendar Date:</span>
+            <input
+              type="date"
+              value={customDate}
+              onChange={(e) => {
+                setCustomDate(e.target.value);
+                setDateFilter('CUSTOM');
+              }}
+              className="px-2.5 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+            />
+          </div>
+
+          {dateFilter !== 'ALL' && (
+            <div className="flex items-center gap-2 text-teal-700 dark:text-teal-300 font-semibold bg-teal-50 dark:bg-teal-950/40 px-3 py-1 rounded-lg">
+              <span>Showing filtered patients for selected date ({patients.length} found)</span>
+              <button
+                onClick={() => setDateFilter('ALL')}
+                className="text-[11px] underline hover:text-teal-900 dark:hover:text-teal-100 font-bold ml-1"
+              >
+                Clear Date Filter
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Filter and Search Bar */}
       <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row gap-4 justify-between items-center">
         {/* Status Tabs */}
@@ -185,6 +311,7 @@ export const PatientsPage: React.FC = () => {
                   <th className="py-3 px-4">Patient Name</th>
                   <th className="py-3 px-4">Gender / Blood</th>
                   <th className="py-3 px-4">Contact Phone</th>
+                  <th className="py-3 px-4">Visit / Reg Date</th>
                   <th className="py-3 px-4">Allergies & Alerts</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
@@ -217,6 +344,11 @@ export const PatientsPage: React.FC = () => {
                     </td>
                     <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 font-mono">
                       {p.phone}
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                      <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[11px] font-mono font-semibold">
+                        {(p as any).registered_at ? new Date((p as any).registered_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Today'}
+                      </span>
                     </td>
                     <td className="py-3.5 px-4">
                       {p.allergies ? (

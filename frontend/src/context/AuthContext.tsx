@@ -23,6 +23,7 @@ interface AuthContextType {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
   login: (username: string, password?: string) => Promise<void>;
+  register: (data: any) => Promise<void>;
   logout: () => void;
   switchDemoRole: (roleName: string) => Promise<void>;
   toasts: Toast[];
@@ -130,6 +131,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const register = async (data: any) => {
+    try {
+      const res = await api.register(data);
+      if (res.access) {
+        localStorage.setItem('bvg_token', res.access);
+        setUser(res.user);
+        setRoleState(res.user.role);
+        showToast(`Registration successful! Welcome, ${res.user.full_name || res.user.username}!`, 'success');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Registration failed.', 'error');
+      throw err;
+    }
+  };
+
   // Explicit demo persona switch with real backend JWT authentication
   const switchDemoRole = async (roleName: string) => {
     let targetRole: Role = 'SUPER_ADMIN';
@@ -228,6 +244,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         theme,
         toggleTheme,
         login,
+        register,
         logout,
         switchDemoRole,
         toasts,

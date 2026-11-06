@@ -24,6 +24,19 @@ export const LaboratoryPage: React.FC = () => {
   const [orderDoctor, setOrderDoctor] = useState('');
   const [selectedTests, setSelectedTests] = useState<number[]>([]);
 
+  // Add Lab Test Modal
+  const [showAddTestModal, setShowAddTestModal] = useState(false);
+  const [testForm, setTestForm] = useState({
+    name: '',
+    test_code: '',
+    category: 'Biochemistry & Pathology',
+    sample_type: 'Whole Blood EDTA',
+    standard_fee: 450,
+    turnaround_hours: 4,
+    unit: 'mg/dL',
+    reference_interval: 'Normal reference range varies by age/gender',
+  });
+
   // View Report Modal
   const [viewOrder, setViewOrder] = useState<LabOrder | null>(null);
 
@@ -80,6 +93,36 @@ export const LaboratoryPage: React.FC = () => {
     }
   };
 
+  const handleAddTestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testForm.name) {
+      showToast('Please enter a test name', 'warning');
+      return;
+    }
+    try {
+      await api.createLabTest({
+        ...testForm,
+        standard_fee: Number(testForm.standard_fee),
+        turnaround_hours: Number(testForm.turnaround_hours),
+      });
+      showToast(`Diagnostic Test '${testForm.name}' added to Lab Catalog!`, 'success');
+      setShowAddTestModal(false);
+      setTestForm({
+        name: '',
+        test_code: '',
+        category: 'Biochemistry & Pathology',
+        sample_type: 'Whole Blood EDTA',
+        standard_fee: 450,
+        turnaround_hours: 4,
+        unit: 'mg/dL',
+        reference_interval: 'Normal reference range varies by age/gender',
+      });
+      fetchData();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to add test', 'error');
+    }
+  };
+
   const handleCollectSample = async (id: number) => {
     try {
       const updated = await api.collectLabSample(id);
@@ -120,13 +163,22 @@ export const LaboratoryPage: React.FC = () => {
             Clinical pathology, biochemistry, sample collection barcode tracking & digital test results
           </p>
         </div>
-        <button
-          onClick={() => setShowOrderModal(true)}
-          className="flex items-center justify-center px-4 py-2.5 bg-[#0F766E] hover:bg-[#0D6861] text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Order Lab Investigation
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowAddTestModal(true)}
+            className="flex items-center justify-center px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 shadow-xs transition-colors"
+          >
+            <FlaskConical className="w-4 h-4 mr-2 text-teal-600 dark:text-teal-400" />
+            Add Lab Test (नवीन लॅब टेस्ट जोडा)
+          </button>
+          <button
+            onClick={() => setShowOrderModal(true)}
+            className="flex items-center justify-center px-4 py-2.5 bg-[#0F766E] hover:bg-[#0D6861] text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Order Lab Investigation
+          </button>
+        </div>
       </div>
 
       {/* Lab Orders Table */}
@@ -398,6 +450,155 @@ export const LaboratoryPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Add Lab Test Modal */}
+      <Modal
+        isOpen={showAddTestModal}
+        onClose={() => setShowAddTestModal(false)}
+        title="Add Diagnostic Laboratory Test (नवीन लॅब टेस्ट जोडा)"
+        subtitle="Configure investigation parameters, specimen requirements and biological reference intervals"
+        maxWidth="lg"
+      >
+        <form onSubmit={handleAddTestSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Investigation / Test Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={testForm.name}
+                onChange={(e) => setTestForm({ ...testForm, name: e.target.value })}
+                placeholder="e.g. HbA1c Glycated Hemoglobin"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Test Code (Unique Identifier)
+              </label>
+              <input
+                type="text"
+                value={testForm.test_code}
+                onChange={(e) => setTestForm({ ...testForm, test_code: e.target.value })}
+                placeholder="e.g. HBA1C-01 (Auto-generated if empty)"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Diagnostic Category
+              </label>
+              <select
+                value={testForm.category}
+                onChange={(e) => setTestForm({ ...testForm, category: e.target.value })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              >
+                <option value="Biochemistry & Pathology">Biochemistry & Pathology</option>
+                <option value="Hematology & Blood Counts">Hematology & Blood Counts</option>
+                <option value="Microbiology & Cultures">Microbiology & Cultures</option>
+                <option value="Immunology & Serology">Immunology & Serology</option>
+                <option value="Endocrinology & Hormones">Endocrinology & Hormones</option>
+                <option value="Clinical Microscopy & Urine">Clinical Microscopy & Urine</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Specimen / Sample Type
+              </label>
+              <select
+                value={testForm.sample_type}
+                onChange={(e) => setTestForm({ ...testForm, sample_type: e.target.value })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              >
+                <option value="Whole Blood EDTA (Lavender Top)">Whole Blood EDTA (Lavender Top)</option>
+                <option value="Serum Gel Clot Activator (Yellow/Red)">Serum Gel Clot Activator (Yellow/Red)</option>
+                <option value="Sodium Fluoride Plasma (Grey Top)">Sodium Fluoride Plasma (Grey Top)</option>
+                <option value="Sodium Citrate Plasma (Blue Top)">Sodium Citrate Plasma (Blue Top)</option>
+                <option value="Midstream Clean Catch Urine">Midstream Clean Catch Urine</option>
+                <option value="Nasopharyngeal / Throat Swab">Nasopharyngeal / Throat Swab</option>
+                <option value="Stool Specimen">Stool Specimen</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Standard Test Fee (₹)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={testForm.standard_fee}
+                onChange={(e) => setTestForm({ ...testForm, standard_fee: Number(e.target.value) })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Turnaround Time (Hours)
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={testForm.turnaround_hours}
+                onChange={(e) => setTestForm({ ...testForm, turnaround_hours: Number(e.target.value) })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Measurement Unit
+              </label>
+              <input
+                type="text"
+                value={testForm.unit}
+                onChange={(e) => setTestForm({ ...testForm, unit: e.target.value })}
+                placeholder="mg/dL, %, g/dL, U/L"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Biological Reference Interval (Normal Range)
+            </label>
+            <input
+              type="text"
+              value={testForm.reference_interval}
+              onChange={(e) => setTestForm({ ...testForm, reference_interval: e.target.value })}
+              placeholder="e.g. Normal: < 5.7 %, Pre-diabetic: 5.7 - 6.4 %, Diabetic: >= 6.5 %"
+              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+            />
+          </div>
+
+          <div className="pt-4 flex justify-end space-x-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => setShowAddTestModal(false)}
+              className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0D6861] rounded-xl shadow-sm"
+            >
+              Save Diagnostic Test
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

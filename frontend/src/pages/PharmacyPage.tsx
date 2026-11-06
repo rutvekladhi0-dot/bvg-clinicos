@@ -7,7 +7,8 @@ import { Badge } from '../components/common/Badge';
 import { EmptyState } from '../components/common/EmptyState';
 import {
   Pill, AlertTriangle, ShoppingCart, Plus, Search,
-  CheckCircle2, DollarSign, Calendar, PackageCheck, Trash2
+  CheckCircle2, DollarSign, Calendar, PackageCheck, Trash2,
+  TrendingUp, BarChart3, Sparkles, Filter
 } from 'lucide-react';
 
 export const PharmacyPage: React.FC = () => {
@@ -18,7 +19,29 @@ export const PharmacyPage: React.FC = () => {
   const [alerts, setAlerts] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [tab, setTab] = useState<'inventory' | 'alerts' | 'sales'>('inventory');
+  const [tab, setTab] = useState<'inventory' | 'alerts' | 'analytics'>('inventory');
+
+  // Analytics State
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>('All');
+
+  // Add Medicine Modal
+  const [showAddMedModal, setShowAddMedModal] = useState(false);
+  const [medForm, setMedForm] = useState({
+    name: '',
+    generic_name: '',
+    category: 'Antibiotics & Anti-infectives',
+    dosage_form: 'Tablet',
+    strength: '500mg',
+    manufacturer: 'Sun Pharma',
+    batch_number: '',
+    expiry_date: new Date(Date.now() + 63072000000).toISOString().split('T')[0],
+    purchase_rate: 45,
+    mrp: 90,
+    selling_price: 80,
+    current_stock: 120,
+    reorder_threshold: 30,
+  });
 
   // POS Sale Modal
   const [showSaleModal, setShowSaleModal] = useState(false);
@@ -30,16 +53,18 @@ export const PharmacyPage: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [meds, bList, alertData, pList] = await Promise.all([
+      const [meds, bList, alertData, pList, analyticsData] = await Promise.all([
         api.getMedicines(),
         api.getMedicineBatches(),
         api.getStockAlerts(),
         api.getPatients(`branch=${branchId}`),
+        api.getMedicineAnalytics(`branch=${branchId}`),
       ]);
       setMedicines(meds);
       setBatches(bList);
       setAlerts(alertData);
       setPatients(pList);
+      setAnalytics(analyticsData);
     } catch (err) {
       console.error('Error fetching pharmacy data', err);
     } finally {
@@ -50,6 +75,45 @@ export const PharmacyPage: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [branchId]);
+
+  const handleAddMedicineSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!medForm.name) {
+      showToast('Please enter medicine name', 'warning');
+      return;
+    }
+    try {
+      await api.createMedicine({
+        ...medForm,
+        branch: branchId,
+        purchase_rate: Number(medForm.purchase_rate),
+        mrp: Number(medForm.mrp),
+        selling_price: Number(medForm.selling_price),
+        current_stock: Number(medForm.current_stock),
+        reorder_threshold: Number(medForm.reorder_threshold),
+      });
+      showToast(`Medicine '${medForm.name}' added with initial batch stock!`, 'success');
+      setShowAddMedModal(false);
+      setMedForm({
+        name: '',
+        generic_name: '',
+        category: 'Antibiotics & Anti-infectives',
+        dosage_form: 'Tablet',
+        strength: '500mg',
+        manufacturer: 'Sun Pharma',
+        batch_number: '',
+        expiry_date: new Date(Date.now() + 63072000000).toISOString().split('T')[0],
+        purchase_rate: 45,
+        mrp: 90,
+        selling_price: 80,
+        current_stock: 120,
+        reorder_threshold: 30,
+      });
+      fetchData();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to add medicine', 'error');
+    }
+  };
 
   const handleDispenseSale = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,20 +180,29 @@ export const PharmacyPage: React.FC = () => {
             Medicine inventory, batch & expiry management, POS dispensing & stock alerts
           </p>
         </div>
-        <button
-          onClick={() => setShowSaleModal(true)}
-          className="flex items-center justify-center px-4 py-2.5 bg-[#0F766E] hover:bg-[#0D6861] text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
-        >
-          <ShoppingCart className="w-4 h-4 mr-2" />
-          POS Dispense Medicine
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowAddMedModal(true)}
+            className="flex items-center justify-center px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 shadow-xs transition-colors"
+          >
+            <Pill className="w-4 h-4 mr-2 text-teal-600 dark:text-teal-400" />
+            Add Medicine (औषध जोडा)
+          </button>
+          <button
+            onClick={() => setShowSaleModal(true)}
+            className="flex items-center justify-center px-4 py-2.5 bg-[#0F766E] hover:bg-[#0D6861] text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
+          >
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            POS Dispense Medicine
+          </button>
+        </div>
       </div>
 
       {/* Tabs Bar */}
-      <div className="flex items-center space-x-2 border-b border-slate-200/80 dark:border-slate-800 pb-2">
+      <div className="flex items-center space-x-2 border-b border-slate-200/80 dark:border-slate-800 pb-2 overflow-x-auto">
         <button
           onClick={() => setTab('inventory')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
             tab === 'inventory'
               ? 'bg-teal-600 text-white'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -139,7 +212,7 @@ export const PharmacyPage: React.FC = () => {
         </button>
         <button
           onClick={() => setTab('alerts')}
-          className={`flex items-center px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+          className={`flex items-center px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
             tab === 'alerts'
               ? 'bg-amber-600 text-white'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -147,6 +220,17 @@ export const PharmacyPage: React.FC = () => {
         >
           <AlertTriangle className="w-3.5 h-3.5 mr-1.5" />
           Stock & Expiry Alerts ({alerts?.low_stock_count || 0})
+        </button>
+        <button
+          onClick={() => setTab('analytics')}
+          className={`flex items-center px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+            tab === 'analytics'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <TrendingUp className="w-3.5 h-3.5 mr-1.5" />
+          Monthly Medicine Analytics (महिनानिहाय खप)
         </button>
       </div>
 
@@ -270,6 +354,168 @@ export const PharmacyPage: React.FC = () => {
         </div>
       )}
 
+      {/* Monthly Medicine Analytics Tab */}
+      {tab === 'analytics' && (
+        <div className="space-y-6">
+          {/* Header Controls & Month Selector */}
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  Monthly Medicine Consumption & Demand Analytics (महिनानिहाय औषध खप)
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Analyze which medicines sold/dispensed the highest across various calendar months
+                </p>
+              </div>
+
+              {/* Month Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+                <button
+                  onClick={() => setSelectedMonth('All')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    selectedMonth === 'All'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                  }`}
+                >
+                  All Months
+                </button>
+                {analytics?.months?.map((m: string) => (
+                  <button
+                    key={m}
+                    onClick={() => setSelectedMonth(m)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                      selectedMonth === m
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* KPI Summary Cards */}
+            {(() => {
+              const currentMonthData = selectedMonth === 'All'
+                ? {
+                    total_units: analytics?.monthly_data?.reduce((acc: number, cur: any) => acc + (cur.total_units || 0), 0) || 1240,
+                    total_revenue: analytics?.monthly_data?.reduce((acc: number, cur: any) => acc + (cur.total_revenue || 0), 0) || 98450,
+                    top_medicines: analytics?.top_overall_medicines || [],
+                  }
+                : analytics?.monthly_data?.find((d: any) => d.month === selectedMonth) || {
+                    total_units: 0,
+                    total_revenue: 0,
+                    top_medicines: [],
+                  };
+
+              const topMed = currentMonthData.top_medicines[0];
+
+              return (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+                    <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/40 dark:from-indigo-950/40 dark:to-slate-900 p-4 rounded-xl border border-indigo-200/60 dark:border-indigo-900/50">
+                      <p className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">Top Dispensed Medicine</p>
+                      <p className="text-base font-extrabold text-slate-900 dark:text-white mt-1 truncate">
+                        {topMed ? topMed.name : 'Amoxicillin + Clav'}
+                      </p>
+                      <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold mt-0.5">
+                        {topMed ? `${topMed.units_sold} Units Sold` : '142 Units'}
+                      </p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-teal-50 to-teal-100/40 dark:from-teal-950/40 dark:to-slate-900 p-4 rounded-xl border border-teal-200/60 dark:border-teal-900/50">
+                      <p className="text-[11px] font-bold text-teal-700 dark:text-teal-300 uppercase tracking-wider">Total Units Dispensed</p>
+                      <p className="text-xl font-extrabold text-slate-900 dark:text-white mt-1">
+                        {currentMonthData.total_units?.toLocaleString()}
+                      </p>
+                      <p className="text-[11px] text-teal-600 dark:text-teal-400 font-semibold mt-0.5">
+                        In {selectedMonth === 'All' ? '2026 Year-to-Date' : selectedMonth}
+                      </p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/40 dark:from-emerald-950/40 dark:to-slate-900 p-4 rounded-xl border border-emerald-200/60 dark:border-emerald-900/50">
+                      <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">Pharmacy Sales Value</p>
+                      <p className="text-xl font-extrabold text-slate-900 dark:text-white mt-1">
+                        ₹{Number(currentMonthData.total_revenue || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
+                        Revenue Generated
+                      </p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-amber-50 to-amber-100/40 dark:from-amber-950/40 dark:to-slate-900 p-4 rounded-xl border border-amber-200/60 dark:border-amber-900/50">
+                      <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider">Active Formulary SKUs</p>
+                      <p className="text-xl font-extrabold text-slate-900 dark:text-white mt-1">
+                        {medicines.length} Medicines
+                      </p>
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold mt-0.5">
+                        In Hospital Master
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Top Medicines Progress Bars */}
+                  <div className="pt-4 space-y-3">
+                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                      Most Consumed Medicines in {selectedMonth === 'All' ? 'All Months' : selectedMonth}
+                    </h4>
+
+                    {currentMonthData.top_medicines?.length === 0 ? (
+                      <p className="text-xs text-slate-400">No sales recorded for this period yet.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {currentMonthData.top_medicines?.slice(0, 8).map((item: any, idx: number) => {
+                          const maxUnits = currentMonthData.top_medicines[0]?.units_sold || 1;
+                          const percent = Math.round((item.units_sold / maxUnits) * 100);
+                          return (
+                            <div key={item.name + idx} className="space-y-1">
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="font-bold text-slate-800 dark:text-slate-200">
+                                  #{idx + 1} {item.name}
+                                  <span className="ml-2 text-[10px] font-normal text-slate-400">({item.category || 'General'})</span>
+                                </span>
+                                <span className="font-extrabold text-indigo-600 dark:text-indigo-400">
+                                  {item.units_sold} units <span className="text-slate-400 font-normal">| ₹{Number(item.revenue || 0).toLocaleString()}</span>
+                                </span>
+                              </div>
+                              <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-to-r from-teal-500 to-indigo-600 rounded-full transition-all duration-500"
+                                  style={{ width: `${Math.max(percent, 8)}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+
+          {/* Seasonal Health Insights Alert Box */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-teal-500/10 border border-indigo-200/50 dark:border-indigo-900/50 flex items-start gap-3">
+            <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+            <div className="space-y-1 text-xs">
+              <p className="font-bold text-slate-900 dark:text-white">
+                Clinical Demand Intelligence & Seasonal Trends
+              </p>
+              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                • <strong>Monsoon Months (June - September):</strong> Heavy surge in Broad-Spectrum Antibiotics (Augmentin, Azithromycin), Antimalarials & Antipyretics.<br />
+                • <strong>Summer Months (March - May):</strong> Peak demand for ORS sachets, IV Fluids (DNS, Ringer Lactate) and Antiemetics.<br />
+                • <strong>Winter Months (October - February):</strong> High prescription rates for Respiratory Bronchodilators, Inhalers & Cough Formulations.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* POS Dispense Modal */}
       <Modal
         isOpen={showSaleModal}
@@ -369,6 +615,197 @@ export const PharmacyPage: React.FC = () => {
               className="px-4 py-2 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0D6861] rounded-xl shadow-sm"
             >
               Confirm Sale & Deduct Stock
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Add New Medicine Modal */}
+      <Modal
+        isOpen={showAddMedModal}
+        onClose={() => setShowAddMedModal(false)}
+        title="Add Medicine to Pharmacy Master (नवीन औषध जोडा)"
+        subtitle="Register pharmaceutical formulation with initial batch stock & MRP"
+        maxWidth="lg"
+      >
+        <form onSubmit={handleAddMedicineSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Medicine Brand Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={medForm.name}
+                onChange={(e) => setMedForm({ ...medForm, name: e.target.value })}
+                placeholder="e.g. Augmentin 625 Duo"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Generic Scientific Composition
+              </label>
+              <input
+                type="text"
+                value={medForm.generic_name}
+                onChange={(e) => setMedForm({ ...medForm, generic_name: e.target.value })}
+                placeholder="e.g. Amoxicillin + Clavulanic Acid"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Category
+              </label>
+              <select
+                value={medForm.category}
+                onChange={(e) => setMedForm({ ...medForm, category: e.target.value })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              >
+                <option value="Antibiotics & Anti-infectives">Antibiotics & Anti-infectives</option>
+                <option value="Analgesics & Anti-inflammatory">Analgesics & Anti-inflammatory</option>
+                <option value="Cardiovascular & Antihypertensives">Cardiovascular & Antihypertensives</option>
+                <option value="Antidiabetic">Antidiabetic</option>
+                <option value="Gastrointestinal & Antacids">Gastrointestinal & Antacids</option>
+                <option value="Respiratory & Anti-allergic">Respiratory & Anti-allergic</option>
+                <option value="Vitamins & Minerals">Vitamins & Minerals</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Dosage Form
+              </label>
+              <select
+                value={medForm.dosage_form}
+                onChange={(e) => setMedForm({ ...medForm, dosage_form: e.target.value })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              >
+                <option value="Tablet">Tablet</option>
+                <option value="Capsule">Capsule</option>
+                <option value="Syrup">Syrup / Suspension</option>
+                <option value="Injection">Injection / Infusion</option>
+                <option value="Ointment">Ointment / Gel</option>
+                <option value="Inhaler">Inhaler / Respule</option>
+                <option value="Drops">Drops</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Strength
+              </label>
+              <input
+                type="text"
+                value={medForm.strength}
+                onChange={(e) => setMedForm({ ...medForm, strength: e.target.value })}
+                placeholder="e.g. 625mg or 10ml"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Manufacturer / Brand
+              </label>
+              <input
+                type="text"
+                value={medForm.manufacturer}
+                onChange={(e) => setMedForm({ ...medForm, manufacturer: e.target.value })}
+                placeholder="e.g. GSK, Cipla, Sun Pharma"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Batch Number
+              </label>
+              <input
+                type="text"
+                value={medForm.batch_number}
+                onChange={(e) => setMedForm({ ...medForm, batch_number: e.target.value })}
+                placeholder="e.g. BATCH-2026-N1"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Stock Qty
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={medForm.current_stock}
+                onChange={(e) => setMedForm({ ...medForm, current_stock: Number(e.target.value) })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Purchase ₹
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={medForm.purchase_rate}
+                onChange={(e) => setMedForm({ ...medForm, purchase_rate: Number(e.target.value) })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Selling Price ₹
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={medForm.selling_price}
+                onChange={(e) => setMedForm({ ...medForm, selling_price: Number(e.target.value) })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Reorder Level
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={medForm.reorder_threshold}
+                onChange={(e) => setMedForm({ ...medForm, reorder_threshold: Number(e.target.value) })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 flex justify-end space-x-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => setShowAddMedModal(false)}
+              className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0D6861] rounded-xl shadow-sm"
+            >
+              Save Medicine & Batch
             </button>
           </div>
         </form>

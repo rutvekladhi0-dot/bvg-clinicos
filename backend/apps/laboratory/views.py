@@ -28,6 +28,53 @@ class LabTestViewSet(viewsets.ModelViewSet):
             qs = qs.filter(category_id=category_id)
         return qs
 
+    def create(self, request, *args, **kwargs):
+        data = request.data
+        name = data.get('name', '').strip()
+        category_val = data.get('category')
+        sample_type = data.get('sample_type', 'Whole Blood EDTA').strip()
+        standard_fee = data.get('standard_fee', 500.00)
+        turnaround_hours = data.get('turnaround_hours', 4)
+        reference_interval = data.get('reference_interval', 'Normal clinical range').strip()
+        unit = data.get('unit', 'mg/dL').strip()
+        test_code = data.get('test_code', '').strip()
+
+        if not name:
+            return Response({'error': 'Test name is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Resolve category
+        category = None
+        if isinstance(category_val, int) or (isinstance(category_val, str) and category_val.isdigit()):
+            category = LabCategory.objects.filter(id=int(category_val)).first()
+        elif isinstance(category_val, str) and category_val:
+            category, _ = LabCategory.objects.get_or_create(name=category_val)
+
+        if not category:
+            category = LabCategory.objects.first()
+            if not category:
+                category = LabCategory.objects.create(name='Biochemistry & Pathology')
+
+        if not test_code:
+            code_prefix = ''.join([w[0].upper() for w in name.split()[:3]]) or 'LAB'
+            test_code = f"{code_prefix}-{LabTest.objects.count() + 101}"
+            counter = 1
+            while LabTest.objects.filter(test_code=test_code).exists():
+                test_code = f"{code_prefix}-{LabTest.objects.count() + 101 + counter}"
+                counter += 1
+
+        test = LabTest.objects.create(
+            name=name,
+            test_code=test_code,
+            category=category,
+            sample_type=sample_type,
+            standard_fee=standard_fee,
+            turnaround_hours=turnaround_hours,
+            reference_interval=reference_interval,
+            unit=unit
+        )
+
+        return Response(LabTestSerializer(test).data, status=status.HTTP_201_CREATED)
+
 class LabOrderViewSet(viewsets.ModelViewSet):
     queryset = LabOrder.objects.all()
     serializer_class = LabOrderSerializer

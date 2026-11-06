@@ -34,6 +34,15 @@ export const OperationTheatrePage: React.FC = () => {
     who_surgical_safety_checklist: true,
   });
 
+  // New OT Suite Modal
+  const [showAddSuiteModal, setShowAddSuiteModal] = useState(false);
+  const [suiteForm, setSuiteForm] = useState({
+    room_number: '',
+    floor: '3rd Floor Surgical Complex',
+    is_operational: true,
+    equipment_details: 'HEPA Filter Class 100, Anesthesia Workstation, Electrosurgical Unit, Multipara Monitor',
+  });
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -76,6 +85,34 @@ export const OperationTheatrePage: React.FC = () => {
     }
   };
 
+  const handleAddSuiteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!suiteForm.room_number) {
+      showToast('Please enter OT Suite name or room number', 'warning');
+      return;
+    }
+    try {
+      await api.createOTRoom({
+        branch: branchId,
+        room_number: suiteForm.room_number.trim(),
+        floor: suiteForm.floor.trim(),
+        is_operational: suiteForm.is_operational,
+        equipment_details: suiteForm.equipment_details.trim(),
+      });
+      showToast(`OT Suite '${suiteForm.room_number}' added successfully!`, 'success');
+      setShowAddSuiteModal(false);
+      setSuiteForm({
+        room_number: '',
+        floor: '3rd Floor Surgical Complex',
+        is_operational: true,
+        equipment_details: 'HEPA Filter Class 100, Anesthesia Workstation, Electrosurgical Unit, Multipara Monitor',
+      });
+      fetchData();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to add OT Suite', 'error');
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -88,13 +125,22 @@ export const OperationTheatrePage: React.FC = () => {
             OT suite scheduling, surgeon assignments, WHO surgical safety checklists & sterilization tracking
           </p>
         </div>
-        <button
-          onClick={() => setShowNewModal(true)}
-          className="flex items-center justify-center px-4 py-2.5 bg-[#0F766E] hover:bg-[#0D6861] text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Schedule Surgery
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowAddSuiteModal(true)}
+            className="flex items-center justify-center px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 shadow-xs transition-colors"
+          >
+            <Scissors className="w-4 h-4 mr-2 text-teal-600 dark:text-teal-400" />
+            Add OT Suite (नवीन ओटी सूट)
+          </button>
+          <button
+            onClick={() => setShowNewModal(true)}
+            className="flex items-center justify-center px-4 py-2.5 bg-[#0F766E] hover:bg-[#0D6861] text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Schedule Surgery
+          </button>
+        </div>
       </div>
 
       {/* OT Suites Status Cards */}
@@ -337,6 +383,88 @@ export const OperationTheatrePage: React.FC = () => {
               className="px-4 py-2 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0D6861] rounded-xl shadow-sm"
             >
               Confirm Surgery Booking
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Add OT Suite Modal */}
+      <Modal
+        isOpen={showAddSuiteModal}
+        onClose={() => setShowAddSuiteModal(false)}
+        title="Add Operation Theatre Suite (नवीन ओटी सूट जोडा)"
+        subtitle="Provision modular surgical suite with laminar air flow and anesthesia workstation"
+        maxWidth="md"
+      >
+        <form onSubmit={handleAddSuiteSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              OT Suite Identifier / Name *
+            </label>
+            <input
+              type="text"
+              required
+              value={suiteForm.room_number}
+              onChange={(e) => setSuiteForm({ ...suiteForm, room_number: e.target.value })}
+              placeholder="e.g. OT-4 (Advanced Robotic & Laparoscopic Suite)"
+              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Floor / Surgical Block
+              </label>
+              <input
+                type="text"
+                required
+                value={suiteForm.floor}
+                onChange={(e) => setSuiteForm({ ...suiteForm, floor: e.target.value })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Operational Status
+              </label>
+              <select
+                value={suiteForm.is_operational ? 'true' : 'false'}
+                onChange={(e) => setSuiteForm({ ...suiteForm, is_operational: e.target.value === 'true' })}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+              >
+                <option value="true">Operational & Sterile</option>
+                <option value="false">Maintenance / Cleaning</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Key Biomedical Equipment & Infrastructure
+            </label>
+            <textarea
+              rows={3}
+              value={suiteForm.equipment_details}
+              onChange={(e) => setSuiteForm({ ...suiteForm, equipment_details: e.target.value })}
+              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+            />
+          </div>
+
+          <div className="pt-4 flex justify-end space-x-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => setShowAddSuiteModal(false)}
+              className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0D6861] rounded-xl shadow-sm"
+            >
+              Save OT Suite
             </button>
           </div>
         </form>

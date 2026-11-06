@@ -119,4 +119,18 @@ class Command(BaseCommand):
                         u.set_password(default_pass)
                     u.save()
 
+        # Check if rich demo data (medicines, batches, labs, wards) is provisioned
+        from apps.pharmacy.models import MedicineBatch
+        if MedicineBatch.objects.count() == 0:
+            self.stdout.write("Provisioning rich clinical demo data (medicines, batches, labs, wards)...")
+            try:
+                backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+                if backend_dir not in sys.path:
+                    sys.path.insert(0, backend_dir)
+                from seed_rich_demo_data import seed_rich_demo_data
+                seed_rich_demo_data()
+                self.stdout.write(self.style.SUCCESS("Successfully seeded rich demo data."))
+            except Exception as e:
+                self.stderr.write(f"Rich demo seed note: {e}")
+
         self.stdout.write(self.style.SUCCESS("All authentication checks & admin users verified successfully."))
